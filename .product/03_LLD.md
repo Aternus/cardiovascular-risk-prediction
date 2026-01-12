@@ -4,17 +4,20 @@
 
 1. Backend: Convex
    1. Easy to use, real-time Backend.
-   2. Includes multi-model DB (Document based + Relational + Key Value, similar to PostgreSQL).
+   2. Includes multi-model DB (Document based + Relational + Key Value, similar
+      to PostgreSQL).
    3. Transactional.
    4. Great DX with LLMs.
 2. Frontend: Next.js
-   1. Easy to use, highly standardized Frontend (React) with Backend capabilities.
+   1. Easy to use, highly standardized Frontend (React) with Backend
+      capabilities.
 
 ## Data collection
 
 ### PREVENT 2023: Fields and Valid Values
 
-Note: values outside the stated ranges should be clamped to the nearest valid value by the calculator; risk estimates may be less accurate.
+Note: values outside the stated ranges should be clamped to the nearest valid
+value by the calculator; risk estimates may be less accurate.
 
 Required fields:
 
@@ -57,11 +60,13 @@ Example:
 
 ## DB
 
-To simplify the implementation we will focus on single tenant - patient can be assigned to a single user.
+To simplify the implementation, we will focus on "single tenant." The patient
+can be assigned to a single user.
 
 ### Patients
 
-Keeps track of all the core patient profiles. IMPORTANT since we want a single Clinician to be able to work with multiple patients.
+Keeps track of all the core patient profiles. IMPORTANT since we want a single
+Clinician to be able to work with multiple patients.
 
 Fields:
 
@@ -77,13 +82,15 @@ Fields:
 
 ### Patient Measurements
 
-Time series facts. Keeps track of all the measurements performed per patient profile.
+Time series facts. Keeps track of all the measurements performed per patient
+profile.
 
 Fields:
 
 1. id (UUID unique)
 2. patientId (UUID foreign key)
-3. kind: "TOTAL_CHOLESTEROL" | "HDL_CHOLESTEROL" | "SYSTOLIC_BP" | "BMI" | "EGFR"
+3. kind: "TOTAL_CHOLESTEROL" | "HDL_CHOLESTEROL" | "SYSTOLIC_BP" | "BMI" |
+   "EGFR"
 4. value
 5. unit
 6. measuredAt
@@ -92,7 +99,8 @@ Fields:
 
 ### Patient Clinical Events
 
-Time series facts. Keep track of the the clinical events associated with the patient.
+Time series facts. Keep track of the clinical events associated with the
+patient.
 
 Fields:
 
@@ -119,7 +127,8 @@ Fields:
 
 ### Recommendations
 
-Keep track of all the inferred (rule based) recommendations per patient and assessment.
+Keep track of all the inferred (rule-based) recommendations per patient and
+assessment.
 
 Fields:
 
@@ -139,24 +148,34 @@ RecommendationItem example:
     "title": "Advise smoking cessation",
     "summary": "Recommend cessation resources and pharmacotherapy as appropriate.",
     "rationale": "Smoking substantially increases cardiovascular risk; cessation reduces risk.",
-    "priority": 1, // 1-3
+    "priority": 1,
     "tags": ["lifestyle", "smoking"],
     "ruleHits": ["rule_smoking_current"]
   }
 ]
 ```
 
+Notes:
+
+1. `priority` is a range (integers): 1-3
+
 ## APIs
 
-Bulk API convention: any resource that needs to accept an array of entities should use a dedicated endpoint, example: `POST /api/v1/patients/{patientId}/measurements/bulk`. This allows consistent visibility into the API structure and properly separation between single and bulk logic.
+Bulk API convention: any resource that needs to accept an array of entities
+should use a dedicated endpoint, example:
+`POST /api/v1/patients/{patientId}/measurements/bulk`. This allows consistent
+visibility into the API structure and proper separation between single and bulk
+logic.
 
 ### External
 
-We will utilize the MdCalc API for main functionality and ClinCalc API for Risk Factor Contribution.
+We will utilize the MdCalc API for the main functionality and ClinCalc API for
+Risk Factor Contribution.
 
 ### Calculate Risk using MdCalc API
 
-We can use the following request to get a result (MdCalcPREVENTAssessmentRequestDTO):
+We can use the following request to get a result
+(MdCalcPREVENTAssessmentRequestDTO):
 
 ```shell
 curl --location 'https://www.mdcalc.com/api/v1/calc/10491/calculate' \
@@ -209,9 +228,12 @@ Expected response (MdCalcPREVENTAssessmentResponseDTO):
 
 ClinCalc doesn't actually have a public API.
 
-We need to access their page at `https://clincalc.com/Cardiology/PREVENT/` and get `__VIEWSTATEGENERATOR`, `__VIEWSTATE`, `__EVENTVALIDATION` values from the page's HTML.
+We need to access their page at `https://clincalc.com/Cardiology/PREVENT/` and
+get `__VIEWSTATEGENERATOR`, `__VIEWSTATE`, `__EVENTVALIDATION` values from the
+page's HTML.
 
-Then we can use the following request to get a result (ClinCalcPREVENTAssessmentRequestDTO):
+Then we can use the following request to get a result
+(ClinCalcPREVENTAssessmentRequestDTO):
 
 ```shell
 curl --location 'https://clincalc.com/Cardiology/PREVENT/' \
@@ -252,8 +274,10 @@ curl --location 'https://clincalc.com/Cardiology/PREVENT/' \
 --data-urlencode 'ctl00%24txtOffcanvasSearch='
 ```
 
-The expected response is an HTML page markup (text) -> ClinCalcPREVENTAssessmentResponseDTO.
-What we're interested in that page is the `drawChart_ASCVDContribution` function which has the data about the risk factors stored in the `data` constant.
+The expected response is an HTML page markup (text) ->
+ClinCalcPREVENTAssessmentResponseDTO. What we're interested in that page is the
+`drawChart_ASCVDContribution` function which has the data about the risk factors
+stored in the `data` constant.
 
 Example:
 
@@ -261,17 +285,17 @@ Example:
 function drawChart_ASCVDContribution() {
   const data = google.visualization.arrayToDataTable([
     [
-      'Risk Factor',
-      '% Contribution',
-      { type: 'string', role: 'style' },
-      { type: 'string', role: 'annotation' },
+      "Risk Factor",
+      "% Contribution",
+      { type: "string", role: "style" },
+      { type: "string", role: "annotation" },
     ],
-    ['Age', -52, '#00ad00', '52%'],
-    ['Total Cholesterol', -10, '#00ad00', '10%'],
-    ['Systolic BP', -10, '#00ad00', '10%'],
-    ['HDL', -5, '#00ad00', '5%'],
-    ['eGFR', -1, '#00ad00', '1%'],
-    ['Smoking', 22, '#ad0000', '22%'],
+    ["Age", -52, "#00ad00", "52%"],
+    ["Total Cholesterol", -10, "#00ad00", "10%"],
+    ["Systolic BP", -10, "#00ad00", "10%"],
+    ["HDL", -5, "#00ad00", "5%"],
+    ["eGFR", -1, "#00ad00", "1%"],
+    ["Smoking", 22, "#ad0000", "22%"],
   ]);
 
   // there will be more code here...
@@ -283,7 +307,7 @@ function drawChart_ASCVDContribution() {
 #### Patients
 
 ```typescript
-export type SexAtBirth = 'female' | 'male';
+export type SexAtBirth = "female" | "male";
 
 export type PatientDto = {
   id: string;
@@ -319,8 +343,8 @@ export type CreatePatientResponse = {
 
 `PATCH /api/v1/patients/{patientId}`
 
-Update a patient profile.
-Checks if the patient profile is assigned to the current user.
+Update a patient profile. Checks if the patient profile is assigned to the
+current user.
 
 ```typescript
 export type UpdatePatientRequest = {
@@ -335,9 +359,8 @@ export type UpdatePatientResponse = {
 
 `DELETE /api/v1/patients/{patientId}`
 
-Delete a patient profile.
-Checks if the patient profile is assigned to the current user.
-Soft delete: removes it from the result of the list queries.
+Delete a patient profile. Checks if the patient profile is assigned to the
+current user. Soft delete: removes it from the result of the list queries.
 
 ```typescript
 export type DeletePatientRequest = {
@@ -359,7 +382,7 @@ export type ListPatientsRequest = {
     search?: string;
     limit?: number;
     cursor?: string;
-    sort?: 'createdAt' | '-createdAt';
+    sort?: "createdAt" | "-createdAt";
   };
 };
 
@@ -387,7 +410,10 @@ export type ListPatientsResponse = {
 
 Assess the risk for a patient.
 
-The handler will use the MdCalc and ClinCalc external APIs (in parallel) to gather the risk data for the patient and construct the risk result. The main data source should be MdCalc as their response is the cleanest with ClinCalc used for Risk Factors extraction (via scraping).
+The handler will use the MdCalc and ClinCalc external APIs (in parallel) to
+gather the risk data for the patient and construct the risk result. The main
+data source should be MdCalc as their response is the cleanest with ClinCalc
+used for Risk Factors extraction (via scraping).
 
 ```typescript
 
@@ -416,12 +442,13 @@ The handler will use the MdCalc and ClinCalc external APIs (in parallel) to gath
 ## Unit Handling
 
 1. Create functions for converting units from/to US/SI (mg/dL, mmol/L).
-   - The functions return value should include the original input and units, e.g.
+   - The functions return value should include the original input and units,
+     e.g.
    ```js
    return {
-     original: { value: 1, unit: 'mg/dL' },
+     original: { value: 1, unit: "mg/dL" },
      value: 0.056,
-     unit: 'mmol/L',
+     unit: "mmol/L",
    };
    ```
 2. Create functions for calculating `eGFR` and `BMI`.
@@ -430,7 +457,8 @@ The handler will use the MdCalc and ClinCalc external APIs (in parallel) to gath
 ## Separate Risk Calculator from Recommendations
 
 Allows us to provide a disclaimer such as:
-Calculator is clinically sourced. Suggestions are based on heuristics.
+
+"Calculator is clinically sourced. Suggestions are based on heuristics."
 
 ```js
 const patientRiskResult = RiskEngine.calculate(patientData);
@@ -439,25 +467,30 @@ const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
 
 ## UI
 
-1. Login Page (login via magic link sent to the email)
+1. Login Page (login via a magic link sent to the email)
 2. Patients List Page
-   1. Create Patient button: open a side drawer that allows filling in Patients record + Patient Measurements record + Patient Clinical Events record
+   1. Create Patient button: open a side drawer that allows filling in Patients
+      record + Patient Measurements record + Patient Clinical Events record
    2. Patients Table with columns:
       1. First Name
       2. Last Name
       3. If there was a previously performed risk assessment for the patient:
          1. Risk of CVD as Low/Borderline/Intermediate/High using totalCVD value
          2. totalCVD as percentage
-      4. View Patient Page button
+      4. View the Patient Page button
 3. View Patient Page
-
-   1. Provide measurements button: side drawer that adds Patient Measurements record.
-   2. Report clinical event button: side drawer that adds Patient Clinical Events record.
-   3. Perform Risk Assessment button: invokes analysis which generates Risk Assessments record + Recommendations record and enters the patient page into "loading" state.
+   1. Provide a measurements button: side drawer that adds Patient Measurements
+      record.
+   2. Report clinical event button: side drawer that adds Patient Clinical
+      Events record.
+   3. Perform Risk Assessment button: invokes analysis which generates Risk
+      Assessments record + Recommendations record and enters the patient page
+      into the "loading" state.
    4. If there was a previously performed risk assessment:
-
-      1. Your risk of having a Cardiovascular (CV) Event with the next 10 years is `totalCVD`
-      2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is considered:
+      1. Your risk of having a Cardiovascular (CV) Event with the next 10 years
+         is `totalCVD`
+      2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is
+         considered:
          1. Low
          2. Borderline
          3. Intermediate
@@ -467,9 +500,9 @@ const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
          2. Stroke
          3. HF
       4. Contribution of each Risk Factor (based on ClinCalc API):
-
-         - Each factor affecting 10-year ASCVD risk can be measured on its own, whether it is protective (reducing risk) or harmful (increasing risk).
-
+         - Each factor affecting 10-year ASCVD risk can be measured on its own,
+           whether it is protective (reducing risk) or harmful (increasing
+           risk).
          1. Age
          2. Total Cholesterol
          3. Systolic BP

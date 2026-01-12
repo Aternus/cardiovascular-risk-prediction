@@ -3,6 +3,7 @@
  * @type {import("prettier").Config}
  */
 const config = {
+  proseWrap: "always",
   plugins: ["@ianvs/prettier-plugin-sort-imports"],
   importOrder: [
     "<BUILTIN_MODULES>",

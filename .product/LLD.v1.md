@@ -8,9 +8,10 @@
    - HTTP Actions via `httpRouter()` to expose a versioned REST API when needed.
 2. Frontend: Next.js (App Router)
    - React Framework + TypeScript
-   - Use Server Components by default, with Server Actions / Route Handlers for server-side calls.
+   - Use Server Components by default, with Server Actions / Route Handlers for
+     server-side calls.
 3. UI: shadcn/ui
-   - A hybrid between headless components and a component library approaches.
+   - A hybrid between headless components and a component library approach.
    - Allows easy adjustment and extensibility.
 4. AuthN/AuthZ: Convex Auth (Magic Link)
    - Passwordless email “magic link” flow.
@@ -22,7 +23,8 @@
 
 ### PREVENT 2023: Fields and Valid Values
 
-Note: values outside the stated ranges should be clamped to the nearest valid value by the calculator; risk estimates may be less accurate.
+Note: values outside the stated ranges should be clamped to the nearest valid
+value by the calculator; risk estimates may be less accurate.
 
 Required fields:
 
@@ -65,10 +67,11 @@ Example:
 
 ## DB
 
-To simplify the implementation we will focus on **single tenant per user**:
+To simplify the implementation, we will focus on **single tenant per user**:
 
 - A signed-in **User** (clinician) owns multiple **Patients**.
-- Every read/write checks `ownerUserId` (from auth) matches the patient’s `ownerUserId`.
+- Every read/write checks `ownerUserId` (from auth) matches the patient’s
+  `ownerUserId`.
 
 Convex notes:
 
@@ -102,7 +105,8 @@ Fields:
 
 - \_id
 - patientId (ref `patients`)
-- kind ("TOTAL_CHOLESTEROL" | "HDL_CHOLESTEROL" | "SYSTOLIC_BP" | "BMI" | "EGFR")
+- kind ("TOTAL_CHOLESTEROL" | "HDL_CHOLESTEROL" | "SYSTOLIC_BP" | "BMI" |
+  "EGFR")
 - value (number)
 - unit (string; store submitted unit, normalize at compute time)
 - measuredAt (unix ms)
@@ -116,7 +120,8 @@ Indexes (recommended):
 ### Table: `patientClinicalEvents`
 
 Time-series **boolean flags** required by the PREVENT model.  
-Use an append-only timeline and treat the **latest** event per `kind` as the current value.
+Use an append-only timeline and treat the **latest** event per `kind` as the
+current value.
 
 Fields:
 
@@ -142,7 +147,8 @@ Fields:
 - patientId (ref `patients`)
 - model ("PREVENT")
 - modelVersion ("2023")
-- inputSnapshot (denormalized JSON; exactly what was sent to the calculator after normalization)
+- inputSnapshot (denormalized JSON; exactly what was sent to the calculator
+  after normalization)
 - results (JSON; 10y + 30y sets)
 
 Indexes (recommended):
@@ -172,34 +178,50 @@ Indexes (recommended):
     "title": "Advise smoking cessation",
     "summary": "Recommend cessation resources and pharmacotherapy as appropriate.",
     "rationale": "Smoking substantially increases cardiovascular risk; cessation reduces risk.",
-    "priority": 1, // 1-3
+    "priority": 1,
     "tags": ["lifestyle", "smoking"],
     "ruleHits": ["rule_smoking_current"]
   }
 ]
 ```
 
+Notes:
+
+1. `priority` is a range (integers): 1-3
+
 ## APIs
 
-Bulk API convention: any resource that needs to accept an array of entities should use a dedicated endpoint, example: `POST /api/v1/patients/{patientId}/measurements/bulk`. This allows consistent visibility into the API structure and proper separation between single and bulk logic.
+Bulk API convention: any resource that needs to accept an array of entities
+should use a dedicated endpoint, example:
+`POST /api/v1/patients/{patientId}/measurements/bulk`. This allows consistent
+visibility into the API structure and proper separation between single and bulk
+logic.
 
 Implementation (selected stack):
 
-- **Convex HTTP Actions** define the REST endpoints (e.g. in `convex/http.ts` using `httpRouter()`).
-- **Next.js App Router** may optionally proxy these endpoints via Route Handlers if you want “same-origin” requests from the browser, but the canonical implementation lives in Convex.
+- **Convex HTTP Actions** define the REST endpoints (e.g. in `convex/http.ts`
+  using `httpRouter()`).
+- **Next.js App Router** may optionally proxy these endpoints via Route Handlers
+  if you want “same-origin” requests from the browser, but the canonical
+  implementation lives in Convex.
 
 ### External
 
 For the MVP:
 
 - **MdCalc** is used to compute PREVENT risks (clean JSON response).
-- **ClinCalc** contribution breakdown is implemented as best-effort scraping (no public API). This is brittle and may be restricted by their terms; treat it as a prototype integration; prefer a licensed/official source in a production system.
+- **ClinCalc** contribution breakdown is implemented as best-effort scraping (no
+  public API). This is brittle and may be restricted by their terms; treat it as
+  a prototype integration; prefer a licensed/official source in a production
+  system.
 
-All external calls are performed server-side (Convex actions / HTTP Actions) to avoid leaking keys/cookies and to sidestep browser CORS.
+All external calls are performed server-side (Convex actions / HTTP Actions) to
+avoid leaking keys/cookies and to sidestep browser CORS.
 
 ### Calculate Risk using MdCalc API
 
-We can use the following request to get a result (MdCalcPREVENTAssessmentRequestDTO):
+We can use the following request to get a result
+(MdCalcPREVENTAssessmentRequestDTO):
 
 ```shell
 curl --location 'https://www.mdcalc.com/api/v1/calc/10491/calculate' \
@@ -252,9 +274,12 @@ Expected response (MdCalcPREVENTAssessmentResponseDTO):
 
 ClinCalc doesn't actually have a public API.
 
-We need to access their page at `https://clincalc.com/Cardiology/PREVENT/` and get `__VIEWSTATEGENERATOR`, `__VIEWSTATE`, `__EVENTVALIDATION` values from the page's HTML.
+We need to access their page at `https://clincalc.com/Cardiology/PREVENT/` and
+get `__VIEWSTATEGENERATOR`, `__VIEWSTATE`, `__EVENTVALIDATION` values from the
+page's HTML.
 
-Then we can use the following request to get a result (ClinCalcPREVENTAssessmentRequestDTO):
+Then we can use the following request to get a result
+(ClinCalcPREVENTAssessmentRequestDTO):
 
 ```shell
 curl --location 'https://clincalc.com/Cardiology/PREVENT/' \
@@ -295,9 +320,11 @@ curl --location 'https://clincalc.com/Cardiology/PREVENT/' \
 --data-urlencode 'ctl00%24txtOffcanvasSearch='
 ```
 
-The expected response is an HTML page markup (text) -> ClinCalcPREVENTAssessmentResponseDTO.
+The expected response is an HTML page markup (text) ->
+ClinCalcPREVENTAssessmentResponseDTO.
 
-What we're interested in that page is the `drawChart_ASCVDContribution` function which has the data about the risk factors stored in the `data` constant.
+What we're interested in that page is the `drawChart_ASCVDContribution` function
+which has the data about the risk factors stored in the `data` constant.
 
 Example:
 
@@ -305,17 +332,17 @@ Example:
 function drawChart_ASCVDContribution() {
   const data = google.visualization.arrayToDataTable([
     [
-      'Risk Factor',
-      '% Contribution',
-      { type: 'string', role: 'style' },
-      { type: 'string', role: 'annotation' },
+      "Risk Factor",
+      "% Contribution",
+      { type: "string", role: "style" },
+      { type: "string", role: "annotation" },
     ],
-    ['Age', -52, '#00ad00', '52%'],
-    ['Total Cholesterol', -10, '#00ad00', '10%'],
-    ['Systolic BP', -10, '#00ad00', '10%'],
-    ['HDL', -5, '#00ad00', '5%'],
-    ['eGFR', -1, '#00ad00', '1%'],
-    ['Smoking', 22, '#ad0000', '22%'],
+    ["Age", -52, "#00ad00", "52%"],
+    ["Total Cholesterol", -10, "#00ad00", "10%"],
+    ["Systolic BP", -10, "#00ad00", "10%"],
+    ["HDL", -5, "#00ad00", "5%"],
+    ["eGFR", -1, "#00ad00", "1%"],
+    ["Smoking", 22, "#ad0000", "22%"],
   ]);
 
   // there will be more code here...
@@ -326,12 +353,15 @@ function drawChart_ASCVDContribution() {
 
 Implementation note (selected stack):
 
-- **Primary**: the UI talks to **Convex queries/mutations/actions** directly (best DX).
-- **Optional REST layer**: expose a versioned REST API (`/api/v1/...`) using **Convex HTTP Actions** (via `httpRouter()`), mainly for:
+- **Primary**: the UI talks to **Convex queries/mutations/actions** directly
+  (the best DX).
+- **Optional REST layer**: expose a versioned REST API (`/api/v1/...`) using
+  **Convex HTTP Actions** (via `httpRouter()`), mainly for:
   - a stable contract for external clients,
   - or proxying through Next.js Route Handlers for “same-origin” calls.
 
-Below is the REST surface (versioned) plus the DTOs. Convex function names can mirror these operations 1:1.
+Below is the REST surface (versioned) plus the DTOs. Convex function names can
+mirror these operations 1:1.
 
 ---
 
@@ -340,7 +370,7 @@ Below is the REST surface (versioned) plus the DTOs. Convex function names can m
 ```typescript
 export type CursorDto = string;
 
-export type SortDirDto = 'asc' | 'desc';
+export type SortDirDto = "asc" | "desc";
 
 export type PaginationQueryDto = {
   limit?: number; // default 50
@@ -358,7 +388,7 @@ export type AuditDto = {
 #### Patients
 
 ```typescript
-export type SexAtBirthDto = 'female' | 'male';
+export type SexAtBirthDto = "female" | "male";
 
 export type PatientDto = {
   id: string;
@@ -394,7 +424,7 @@ export type CreatePatientResponseDTO = { patient: PatientDto };
 export type ListPatientsRequestDTO = {
   query?: PaginationQueryDto & {
     search?: string;
-    sort?: 'createdAt' | '-createdAt';
+    sort?: "createdAt" | "-createdAt";
   };
 };
 
@@ -432,17 +462,18 @@ export type DeletePatientResponseDTO = { deleted: true };
 
 #### Patient Measurements
 
-These are time-series numeric facts (lab / vitals). We keep a _kind + value + unit + measuredAt_ record.
+These are time-series numeric facts (lab / vitals). We keep a _kind + value +
+unit + measuredAt_ record.
 
 ```typescript
 export type MeasurementKindDto =
-  | 'TOTAL_CHOLESTEROL'
-  | 'HDL_CHOLESTEROL'
-  | 'SYSTOLIC_BP'
-  | 'BMI'
-  | 'EGFR';
+  | "TOTAL_CHOLESTEROL"
+  | "HDL_CHOLESTEROL"
+  | "SYSTOLIC_BP"
+  | "BMI"
+  | "EGFR";
 
-export type MeasurementSourceDto = 'PATIENT' | 'CLINICIAN' | 'IMPORT';
+export type MeasurementSourceDto = "PATIENT" | "CLINICIAN" | "IMPORT";
 
 export type PatientMeasurementDto = {
   id: string;
@@ -456,11 +487,11 @@ export type PatientMeasurementDto = {
 
 export type PatientMeasurementCreateDto = Omit<
   PatientMeasurementDto,
-  'id' | 'createdAt' | 'updatedAt'
+  "id" | "createdAt" | "updatedAt"
 >;
 
 export type PatientMeasurementUpdateDto = Partial<
-  Pick<PatientMeasurementCreateDto, 'value' | 'unit' | 'measuredAt' | 'source'>
+  Pick<PatientMeasurementCreateDto, "value" | "unit" | "measuredAt" | "source">
 >;
 ```
 
@@ -469,7 +500,7 @@ export type PatientMeasurementUpdateDto = Partial<
 ```typescript
 export type CreatePatientMeasurementRequestDTO = {
   patientId: string;
-  body: Omit<PatientMeasurementCreateDto, 'patientId'>;
+  body: Omit<PatientMeasurementCreateDto, "patientId">;
 };
 
 export type CreatePatientMeasurementResponseDTO = {
@@ -482,7 +513,7 @@ export type CreatePatientMeasurementResponseDTO = {
 ```typescript
 export type CreatePatientMeasurementsBulkRequestDTO = {
   patientId: string;
-  body: Array<Omit<PatientMeasurementCreateDto, 'patientId'>>;
+  body: Array<Omit<PatientMeasurementCreateDto, "patientId">>;
 };
 
 export type CreatePatientMeasurementsBulkResponseDTO = {
@@ -499,7 +530,7 @@ export type ListPatientMeasurementsRequestDTO = {
     kind?: MeasurementKindDto;
     measuredAfter?: number; // unix ms
     measuredBefore?: number; // unix ms
-    sort?: 'measuredAt' | '-measuredAt';
+    sort?: "measuredAt" | "-measuredAt";
   };
 };
 
@@ -540,12 +571,12 @@ export type DeletePatientMeasurementResponseDTO = { deleted: true };
 
 ```typescript
 export type ClinicalEventKindDto =
-  | 'DIABETES'
-  | 'SMOKER'
-  | 'ON_ANTIHYPERTENSIVE'
-  | 'ON_STATIN';
+  | "DIABETES"
+  | "SMOKER"
+  | "ON_ANTIHYPERTENSIVE"
+  | "ON_STATIN";
 
-export type ClinicalEventSourceDto = 'PATIENT' | 'CLINICIAN' | 'IMPORT';
+export type ClinicalEventSourceDto = "PATIENT" | "CLINICIAN" | "IMPORT";
 
 export type PatientClinicalEventDto = {
   id: string;
@@ -558,7 +589,7 @@ export type PatientClinicalEventDto = {
 
 export type PatientClinicalEventCreateDto = Omit<
   PatientClinicalEventDto,
-  'id' | 'createdAt' | 'updatedAt'
+  "id" | "createdAt" | "updatedAt"
 >;
 ```
 
@@ -567,7 +598,7 @@ export type PatientClinicalEventCreateDto = Omit<
 ```typescript
 export type CreatePatientClinicalEventRequestDTO = {
   patientId: string;
-  body: Omit<PatientClinicalEventCreateDto, 'patientId'>;
+  body: Omit<PatientClinicalEventCreateDto, "patientId">;
 };
 
 export type CreatePatientClinicalEventResponseDTO = {
@@ -580,7 +611,7 @@ export type CreatePatientClinicalEventResponseDTO = {
 ```typescript
 export type CreatePatientClinicalEventsBulkRequestDTO = {
   patientId: string;
-  body: Array<Omit<PatientClinicalEventCreateDto, 'patientId'>>;
+  body: Array<Omit<PatientClinicalEventCreateDto, "patientId">>;
 };
 
 export type CreatePatientClinicalEventsBulkResponseDTO = {
@@ -595,7 +626,7 @@ export type ListPatientClinicalEventsRequestDTO = {
   patientId: string;
   query?: PaginationQueryDto & {
     kind?: ClinicalEventKindDto;
-    sort?: 'recordedAt' | '-recordedAt';
+    sort?: "recordedAt" | "-recordedAt";
   };
 };
 
@@ -609,12 +640,13 @@ export type ListPatientClinicalEventsResponseDTO = {
 
 #### Risk Assessments
 
-A risk assessment is computed from a **snapshot** (latest measurement per kind + latest clinical flag per kind + computed age).
+A risk assessment is computed from a **snapshot** (latest measurement per kind +
+latest clinical flag per kind + computed age).
 
 ```typescript
-export type RiskModelDto = 'PREVENT';
-export type RiskModelVersionDto = '2023';
-export type TimeHorizonDto = '10_YEARS' | '30_YEARS';
+export type RiskModelDto = "PREVENT";
+export type RiskModelVersionDto = "2023";
+export type TimeHorizonDto = "10_YEARS" | "30_YEARS";
 
 export type PreventRiskSetDto = {
   totalCVD: string;
@@ -626,8 +658,8 @@ export type PreventRiskSetDto = {
 
 export type RiskAssessmentResultDto = {
   timeHorizon: TimeHorizonDto;
-  setName: 'RISKS';
-  setUnits: '%';
+  setName: "RISKS";
+  setUnits: "%";
   data: PreventRiskSetDto;
 };
 
@@ -665,7 +697,7 @@ export type CreateRiskAssessmentResponseDTO = {
 export type ListRiskAssessmentsRequestDTO = {
   patientId: string;
   query?: PaginationQueryDto & {
-    sort?: 'createdAt' | '-createdAt';
+    sort?: "createdAt" | "-createdAt";
   };
 };
 
@@ -777,12 +809,13 @@ export type UpsertRecommendationsResponseDTO = {
 ## Unit Handling
 
 1. Create functions for converting units from/to US/SI (mg/dL, mmol/L).
-   - The functions return value should include the original input and units, e.g.
+   - The functions return value should include the original input and units,
+     e.g.
    ```js
    return {
-     original: { value: 1, unit: 'mg/dL' },
+     original: { value: 1, unit: "mg/dL" },
      value: 0.056,
-     unit: 'mmol/L',
+     unit: "mmol/L",
    };
    ```
 2. Create functions for calculating `eGFR` and `BMI`.
@@ -791,7 +824,8 @@ export type UpsertRecommendationsResponseDTO = {
 ## Separate Risk Calculator from Recommendations
 
 Allows us to provide a disclaimer such as:
-Calculator is clinically sourced. Suggestions are based on heuristics.
+
+"Calculator is clinically sourced. Suggestions are based on heuristics."
 
 ```js
 const patientRiskResult = RiskEngine.calculate(patientData);
@@ -800,25 +834,30 @@ const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
 
 ## UI
 
-1. Login Page (login via magic link sent to the email)
+1. Login Page (login via a magic link sent to the email)
 2. Patients List Page
-   1. Create Patient button: open a side drawer that allows filling in Patients record + Patient Measurements record + Patient Clinical Events record
+   1. Create Patient button: open a side drawer that allows filling in Patients
+      record + Patient Measurements record + Patient Clinical Events record
    2. Patients Table with columns:
       1. First Name
       2. Last Name
       3. If there was a previously performed risk assessment for the patient:
          1. Risk of CVD as Low/Borderline/Intermediate/High using totalCVD value
          2. totalCVD as percentage
-      4. View Patient Page button
+      4. View the Patient Page button
 3. View Patient Page
-
-   1. Provide measurements button: side drawer that adds Patient Measurements record.
-   2. Report clinical event button: side drawer that adds Patient Clinical Events record.
-   3. Perform Risk Assessment button: invokes analysis which generates Risk Assessments record + Recommendations record and enters the patient page into "loading" state.
+   1. Provide a measurements button: side drawer that adds Patient Measurements
+      record.
+   2. Report clinical event button: side drawer that adds Patient Clinical
+      Events record.
+   3. Perform Risk Assessment button: invokes analysis which generates Risk
+      Assessments record + Recommendations record and enters the patient page
+      into the "loading" state.
    4. If there was a previously performed risk assessment:
-
-      1. Your risk of having a Cardiovascular (CV) Event with the next 10 years is `totalCVD`
-      2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is considered:
+      1. Your risk of having a Cardiovascular (CV) Event with the next 10 years
+         is `totalCVD`
+      2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is
+         considered:
          1. Low
          2. Borderline
          3. Intermediate
@@ -828,9 +867,9 @@ const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
          2. Stroke
          3. HF
       4. Contribution of each Risk Factor (based on ClinCalc API):
-
-         - Each factor affecting 10-year ASCVD risk can be measured on its own, whether it is protective (reducing risk) or harmful (increasing risk).
-
+         - Each factor affecting 10-year ASCVD risk can be measured on its own,
+           whether it is protective (reducing risk) or harmful (increasing
+           risk).
          1. Age
          2. Total Cholesterol
          3. Systolic BP
