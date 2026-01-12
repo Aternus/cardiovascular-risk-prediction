@@ -23,6 +23,11 @@
   files are ignored).
 - `npm run format`: Formats the codebase with Prettier.
 
+## Checklist (Before Finishing Any Coding Task)
+
+- [ ] Run `npm run format` and verify it completes without errors.
+- [ ] Run `npm run lint` and fix any reported issues.
+
 ## Coding Style & Naming Conventions
 
 - TypeScript with `strict` enabled; keep types explicit when behavior is
