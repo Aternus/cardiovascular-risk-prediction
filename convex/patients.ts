@@ -11,7 +11,7 @@ type MeasurementKind =
   | "SYSTOLIC_BP"
   | "BMI"
   | "EGFR";
-type MeasurementSource = "PATIENT" | "CLINICIAN" | "IMPORT";
+type MeasurementSource = "CLINICIAN" | "IMPORT";
 type ClinicalEventKind =
   | "DIABETES"
   | "SMOKING_STATUS"
@@ -70,7 +70,6 @@ const measurementKindValidator = v.union(
   v.literal("EGFR"),
 );
 const measurementSourceValidator = v.union(
-  v.literal("PATIENT"),
   v.literal("CLINICIAN"),
   v.literal("IMPORT"),
 );
