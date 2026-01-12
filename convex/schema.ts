@@ -34,11 +34,7 @@ export default defineSchema({
     value: v.number(),
     unit: v.string(),
     measuredAt: v.number(), // unix ms
-    source: v.union(
-      v.literal("PATIENT"),
-      v.literal("CLINICIAN"),
-      v.literal("IMPORT"),
-    ),
+    source: v.union(v.literal("CLINICIAN"), v.literal("IMPORT")),
   })
     .index("by_patientId_measuredAt", ["patientId", "measuredAt"])
     .index("by_patientId_kind_measuredAt", ["patientId", "kind", "measuredAt"]),
