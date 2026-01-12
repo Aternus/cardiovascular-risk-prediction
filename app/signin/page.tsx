@@ -36,9 +36,9 @@ export default function SignIn() {
               Cardiovascular Risk Prediction System
             </h1>
             <p className="text-slate-600 dark:text-slate-300 max-w-md">
-              Sign in to access the risk assessment dashboard, patient
-              insights, and model results. Create an account if you are new to
-              the platform.
+              Sign in to access the risk assessment dashboard, patient insights,
+              and model results. Create an account if you are new to the
+              platform.
             </p>
           </div>
           <form
@@ -86,7 +86,11 @@ export default function SignIn() {
               type="submit"
               disabled={loading}
             >
-              {loading ? "Loading..." : flow === "signIn" ? "Sign in" : "Sign up"}
+              {loading
+                ? "Loading..."
+                : flow === "signIn"
+                  ? "Sign in"
+                  : "Sign up"}
             </button>
             <div className="flex flex-row gap-2 text-sm justify-center">
               <span className="text-slate-600 dark:text-slate-400">
