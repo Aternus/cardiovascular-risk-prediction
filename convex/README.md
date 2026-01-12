@@ -6,7 +6,7 @@ more.
 A query function that takes two arguments looks like:
 
 ```ts
-// convex/numbers.ts
+// convex/myFunctions.ts
 import { v } from "convex/values";
 
 import { query } from "./_generated/server";
@@ -46,7 +46,7 @@ const data = useQuery(api.myFunctions.myQueryFunction, {
 A mutation function looks like:
 
 ```ts
-// convex/numbers.ts
+// convex/myFunctions.ts
 import { v } from "convex/values";
 
 import { mutation } from "./_generated/server";
