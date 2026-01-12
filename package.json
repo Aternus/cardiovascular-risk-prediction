@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@openai/codex": "^0.80.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^22.19.5",
