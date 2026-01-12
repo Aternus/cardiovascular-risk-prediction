@@ -13,8 +13,8 @@
 3. UI: shadcn/ui
    - A hybrid between headless components and a component library approach.
    - Allows easy adjustment and extensibility.
-4. AuthN/AuthZ: Convex Auth (Magic Link)
-   - Passwordless email “magic link” flow.
+4. AuthN/AuthZ: Convex Auth
+   - Email + Password flow for MVP.
 5. Deployment
    - Backend: Convex managed deployment
    - Frontend: Node.js application on Render
@@ -840,7 +840,7 @@ export type UpsertRecommendationsResponseDTO = {
    2. Models: PREVENT (routing-ready)
    3. Engines: Risk, Recommendation
 3. Next.js (frontend)
-   1. Auth UI (magic link)
+   1. Auth UI (Email + Password)
    2. Patients UI
    3. Patient detail & assessment UI
 
@@ -878,7 +878,7 @@ const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
 
 ## UI
 
-1. Login Page (login via a magic link sent to the email)
+1. Login Page (login via email and password)
 2. Patients List Page
    1. Create Patient button: open a side drawer that allows filling in Patients
       record + Patient Measurements record + Patient Clinical Events record
