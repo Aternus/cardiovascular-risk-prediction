@@ -378,8 +378,7 @@ export type PaginationQueryDTO = {
 };
 
 export type AuditDTO = {
-  createdAt: number; // unix ms (maps to Convex _creationTime)
-  updatedAt?: number; // unix ms (if you choose to maintain explicitly)
+  updatedAt: number; // unix ms, default: creation time
 };
 ```
 
@@ -388,7 +387,7 @@ export type AuditDTO = {
 #### Patients
 
 ```typescript
-export type SexAtBirthDTO = "female" | "male";
+export type SexAtBirthDTO = "FEMALE" | "MALE";
 
 export type PatientDTO = {
   id: string;
@@ -416,7 +415,7 @@ export type PatientWithLatestRiskDTO = PatientDTO & {
     createdAt: number;
     timeHorizon: TimeHorizonDTO;
     totalCVD: string;
-    riskCategory: "low" | "borderline" | "intermediate" | "high";
+    riskCategory: "LOW" | "BORDERLINE" | "INTERMEDIATE" | "HIGH";
   };
 };
 ```
@@ -537,10 +536,6 @@ export type PatientMeasurementDTO = {
 export type PatientMeasurementCreateDTO = Omit<
   PatientMeasurementDTO,
   "id" | "createdAt" | "updatedAt"
->;
-
-export type PatientMeasurementUpdateDTO = Partial<
-  Pick<PatientMeasurementCreateDTO, "value" | "unit" | "measuredAt" | "source">
 >;
 ```
 
