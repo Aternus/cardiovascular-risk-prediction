@@ -1,12 +1,12 @@
 # Welcome to your Convex functions directory!
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+Write your Convex functions here. See https://docs.convex.dev/functions for
+more.
 
 A query function that takes two arguments looks like:
 
 ```ts
-// convex/myFunctions.ts
+// convex/numbers.ts
 import { v } from "convex/values";
 
 import { query } from "./_generated/server";
@@ -46,7 +46,7 @@ const data = useQuery(api.myFunctions.myQueryFunction, {
 A mutation function looks like:
 
 ```ts
-// convex/myFunctions.ts
+// convex/numbers.ts
 import { v } from "convex/values";
 
 import { mutation } from "./_generated/server";
@@ -87,6 +87,6 @@ function handleButtonPress() {
 }
 ```
 
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+Use the Convex CLI to push your functions to a deployment. See everything the
+Convex CLI can do by running `npx convex -h` in your project root directory. To
+learn more, launch the docs with `npx convex docs`.

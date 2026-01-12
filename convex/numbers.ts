@@ -75,13 +75,13 @@ export const myAction = action({
     // const data = await response.json();
 
     //// Query data by running Convex queries.
-    const data = await ctx.runQuery(api.myFunctions.listNumbers, {
+    const data = await ctx.runQuery(api.numbers.listNumbers, {
       count: 10,
     });
     console.log(data);
 
     //// Write data by running Convex mutations.
-    await ctx.runMutation(api.myFunctions.addNumber, {
+    await ctx.runMutation(api.numbers.addNumber, {
       value: args.first,
     });
   },
