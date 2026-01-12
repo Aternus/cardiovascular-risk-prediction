@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
+    "@openai/codex": "^0.80.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^22.19.5",
     "@types/react": "^19.2.6",
