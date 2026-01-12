@@ -12,6 +12,10 @@ export const listNumbers = query({
   args: {
     count: v.number(),
   },
+  returns: v.object({
+    viewer: v.union(v.string(), v.null()),
+    numbers: v.array(v.number()),
+  }),
 
   // Query implementation.
   handler: async (ctx, args) => {
@@ -37,6 +41,7 @@ export const addNumber = mutation({
   args: {
     value: v.number(),
   },
+  returns: v.null(),
 
   // Mutation implementation.
   handler: async (ctx, args) => {
@@ -59,6 +64,7 @@ export const myAction = action({
     first: v.number(),
     second: v.string(),
   },
+  returns: v.null(),
 
   // Action implementation.
   handler: async (ctx, args) => {
