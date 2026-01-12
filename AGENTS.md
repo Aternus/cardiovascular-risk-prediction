@@ -25,6 +25,7 @@
 
 ## Checklist (Before Finishing Any Coding Task)
 
+- [ ] Run `npx convex codegen` and verify it completes without errors.
 - [ ] Run `npm run format` and verify it completes without errors.
 - [ ] Run `npm run lint` and fix any reported issues.
 
@@ -35,7 +36,8 @@
 - Formatting follows existing file style; use `npm run format` (Prettier) and
   `npm run lint` (ESLint) before pushing changes.
 - Naming: React components use PascalCase (`RiskChart.tsx`), hooks use `useX`,
-  Convex functions are camelCase (`listNumbers`).
+  Convex functions are camelCase (`listNumbers`), DTO is always uppercase in
+  types and variables (`PatientDTO`, `patientDTO`).
 
 ## Testing Guidelines
 
