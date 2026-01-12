@@ -5,7 +5,7 @@ import Image from "next/image";
 import Home from "./inner";
 
 export default async function ServerPage() {
-  const preloaded = await preloadQuery(api.myFunctions.listNumbers, {
+  const preloaded = await preloadQuery(api.numbers.listNumbers, {
     count: 3,
   });
 

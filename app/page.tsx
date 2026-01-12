@@ -67,10 +67,10 @@ function SignOutButton() {
 
 function Content() {
   const { viewer, numbers } =
-    useQuery(api.myFunctions.listNumbers, {
+    useQuery(api.numbers.listNumbers, {
       count: 10,
     }) ?? {};
-  const addNumber = useMutation(api.myFunctions.addNumber);
+  const addNumber = useMutation(api.numbers.addNumber);
 
   if (viewer === undefined || numbers === undefined) {
     return (
@@ -146,7 +146,7 @@ function Content() {
         <p className="text-slate-600 dark:text-slate-400 text-sm">
           Edit{" "}
           <code className="text-sm font-semibold font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600">
-            convex/myFunctions.ts
+            convex/numbers.ts
           </code>{" "}
           to change the backend.
         </p>
