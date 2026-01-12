@@ -368,16 +368,16 @@ mirror these operations 1:1.
 #### Common types
 
 ```typescript
-export type CursorDto = string;
+export type CursorDTO = string;
 
-export type SortDirDto = "asc" | "desc";
+export type SortDirDTO = "asc" | "desc";
 
-export type PaginationQueryDto = {
+export type PaginationQueryDTO = {
   limit?: number; // default 50
-  cursor?: CursorDto;
+  cursor?: CursorDTO;
 };
 
-export type AuditDto = {
+export type AuditDTO = {
   createdAt: number; // unix ms (maps to Convex _creationTime)
   updatedAt?: number; // unix ms (if you choose to maintain explicitly)
 };
@@ -388,25 +388,25 @@ export type AuditDto = {
 #### Patients
 
 ```typescript
-export type SexAtBirthDto = "female" | "male";
+export type SexAtBirthDTO = "female" | "male";
 
-export type PatientDto = {
+export type PatientDTO = {
   id: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string; // YYYY-MM-DD
-  sexAtBirth: SexAtBirthDto;
+  sexAtBirth: SexAtBirthDTO;
   isActive: boolean;
-} & AuditDto;
+} & AuditDTO;
 
-export type PatientCreateDto = {
+export type PatientCreateDTO = {
   firstName: string;
   lastName: string;
   dateOfBirth: string; // YYYY-MM-DD
-  sexAtBirth: SexAtBirthDto;
+  sexAtBirth: SexAtBirthDTO;
 };
 
-export type PatientUpdateDto = Partial<PatientCreateDto> & {
+export type PatientUpdateDTO = Partial<PatientCreateDTO> & {
   isActive?: boolean;
 };
 ```
@@ -414,23 +414,23 @@ export type PatientUpdateDto = Partial<PatientCreateDto> & {
 `POST /api/v1/patients`
 
 ```typescript
-export type CreatePatientRequestDTO = { body: PatientCreateDto };
-export type CreatePatientResponseDTO = { patient: PatientDto };
+export type CreatePatientRequestDTO = { body: PatientCreateDTO };
+export type CreatePatientResponseDTO = { patient: PatientDTO };
 ```
 
 `GET /api/v1/patients`
 
 ```typescript
 export type ListPatientsRequestDTO = {
-  query?: PaginationQueryDto & {
+  query?: PaginationQueryDTO & {
     search?: string;
     sort?: "createdAt" | "-createdAt";
   };
 };
 
 export type ListPatientsResponseDTO = {
-  items: PatientDto[];
-  nextCursor?: CursorDto;
+  items: PatientDTO[];
+  nextCursor?: CursorDTO;
 };
 ```
 
@@ -438,7 +438,7 @@ export type ListPatientsResponseDTO = {
 
 ```typescript
 export type GetPatientRequestDTO = { patientId: string };
-export type GetPatientResponseDTO = { patient: PatientDto };
+export type GetPatientResponseDTO = { patient: PatientDTO };
 ```
 
 `PATCH /api/v1/patients/{patientId}`
@@ -446,9 +446,9 @@ export type GetPatientResponseDTO = { patient: PatientDto };
 ```typescript
 export type UpdatePatientRequestDTO = {
   patientId: string;
-  body: PatientUpdateDto;
+  body: PatientUpdateDTO;
 };
-export type UpdatePatientResponseDTO = { patient: PatientDto };
+export type UpdatePatientResponseDTO = { patient: PatientDTO };
 ```
 
 `DELETE /api/v1/patients/{patientId}` (soft delete)
@@ -466,32 +466,32 @@ These are time-series numeric facts (lab / vitals). We keep a _kind + value +
 unit + measuredAt_ record.
 
 ```typescript
-export type MeasurementKindDto =
+export type MeasurementKindDTO =
   | "TOTAL_CHOLESTEROL"
   | "HDL_CHOLESTEROL"
   | "SYSTOLIC_BP"
   | "BMI"
   | "EGFR";
 
-export type MeasurementSourceDto = "PATIENT" | "CLINICIAN" | "IMPORT";
+export type MeasurementSourceDTO = "PATIENT" | "CLINICIAN" | "IMPORT";
 
-export type PatientMeasurementDto = {
+export type PatientMeasurementDTO = {
   id: string;
   patientId: string;
-  kind: MeasurementKindDto;
+  kind: MeasurementKindDTO;
   value: number;
   unit: string; // store the unit submitted; normalize at compute time
   measuredAt: number; // unix ms
-  source: MeasurementSourceDto;
-} & AuditDto;
+  source: MeasurementSourceDTO;
+} & AuditDTO;
 
-export type PatientMeasurementCreateDto = Omit<
-  PatientMeasurementDto,
+export type PatientMeasurementCreateDTO = Omit<
+  PatientMeasurementDTO,
   "id" | "createdAt" | "updatedAt"
 >;
 
-export type PatientMeasurementUpdateDto = Partial<
-  Pick<PatientMeasurementCreateDto, "value" | "unit" | "measuredAt" | "source">
+export type PatientMeasurementUpdateDTO = Partial<
+  Pick<PatientMeasurementCreateDTO, "value" | "unit" | "measuredAt" | "source">
 >;
 ```
 
@@ -500,11 +500,11 @@ export type PatientMeasurementUpdateDto = Partial<
 ```typescript
 export type CreatePatientMeasurementRequestDTO = {
   patientId: string;
-  body: Omit<PatientMeasurementCreateDto, "patientId">;
+  body: Omit<PatientMeasurementCreateDTO, "patientId">;
 };
 
 export type CreatePatientMeasurementResponseDTO = {
-  measurement: PatientMeasurementDto;
+  measurement: PatientMeasurementDTO;
 };
 ```
 
@@ -513,11 +513,11 @@ export type CreatePatientMeasurementResponseDTO = {
 ```typescript
 export type CreatePatientMeasurementsBulkRequestDTO = {
   patientId: string;
-  body: Array<Omit<PatientMeasurementCreateDto, "patientId">>;
+  body: Array<Omit<PatientMeasurementCreateDTO, "patientId">>;
 };
 
 export type CreatePatientMeasurementsBulkResponseDTO = {
-  items: PatientMeasurementDto[];
+  items: PatientMeasurementDTO[];
 };
 ```
 
@@ -526,8 +526,8 @@ export type CreatePatientMeasurementsBulkResponseDTO = {
 ```typescript
 export type ListPatientMeasurementsRequestDTO = {
   patientId: string;
-  query?: PaginationQueryDto & {
-    kind?: MeasurementKindDto;
+  query?: PaginationQueryDTO & {
+    kind?: MeasurementKindDTO;
     measuredAfter?: number; // unix ms
     measuredBefore?: number; // unix ms
     sort?: "measuredAt" | "-measuredAt";
@@ -535,8 +535,8 @@ export type ListPatientMeasurementsRequestDTO = {
 };
 
 export type ListPatientMeasurementsResponseDTO = {
-  items: PatientMeasurementDto[];
-  nextCursor?: CursorDto;
+  items: PatientMeasurementDTO[];
+  nextCursor?: CursorDTO;
 };
 ```
 
@@ -546,11 +546,11 @@ export type ListPatientMeasurementsResponseDTO = {
 export type UpdatePatientMeasurementRequestDTO = {
   patientId: string;
   measurementId: string;
-  body: PatientMeasurementUpdateDto;
+  body: PatientMeasurementUpdateDTO;
 };
 
 export type UpdatePatientMeasurementResponseDTO = {
-  measurement: PatientMeasurementDto;
+  measurement: PatientMeasurementDTO;
 };
 ```
 
@@ -570,25 +570,25 @@ export type DeletePatientMeasurementResponseDTO = { deleted: true };
 #### Patient Clinical Events (boolean flags)
 
 ```typescript
-export type ClinicalEventKindDto =
+export type ClinicalEventKindDTO =
   | "DIABETES"
   | "SMOKER"
   | "ON_ANTIHYPERTENSIVE"
   | "ON_STATIN";
 
-export type ClinicalEventSourceDto = "PATIENT" | "CLINICIAN" | "IMPORT";
+export type ClinicalEventSourceDTO = "PATIENT" | "CLINICIAN" | "IMPORT";
 
-export type PatientClinicalEventDto = {
+export type PatientClinicalEventDTO = {
   id: string;
   patientId: string;
-  kind: ClinicalEventKindDto;
+  kind: ClinicalEventKindDTO;
   value: boolean;
   recordedAt: number; // unix ms
-  source: ClinicalEventSourceDto;
-} & AuditDto;
+  source: ClinicalEventSourceDTO;
+} & AuditDTO;
 
-export type PatientClinicalEventCreateDto = Omit<
-  PatientClinicalEventDto,
+export type PatientClinicalEventCreateDTO = Omit<
+  PatientClinicalEventDTO,
   "id" | "createdAt" | "updatedAt"
 >;
 ```
@@ -598,11 +598,11 @@ export type PatientClinicalEventCreateDto = Omit<
 ```typescript
 export type CreatePatientClinicalEventRequestDTO = {
   patientId: string;
-  body: Omit<PatientClinicalEventCreateDto, "patientId">;
+  body: Omit<PatientClinicalEventCreateDTO, "patientId">;
 };
 
 export type CreatePatientClinicalEventResponseDTO = {
-  event: PatientClinicalEventDto;
+  event: PatientClinicalEventDTO;
 };
 ```
 
@@ -611,11 +611,11 @@ export type CreatePatientClinicalEventResponseDTO = {
 ```typescript
 export type CreatePatientClinicalEventsBulkRequestDTO = {
   patientId: string;
-  body: Array<Omit<PatientClinicalEventCreateDto, "patientId">>;
+  body: Array<Omit<PatientClinicalEventCreateDTO, "patientId">>;
 };
 
 export type CreatePatientClinicalEventsBulkResponseDTO = {
-  items: PatientClinicalEventDto[];
+  items: PatientClinicalEventDTO[];
 };
 ```
 
@@ -624,15 +624,15 @@ export type CreatePatientClinicalEventsBulkResponseDTO = {
 ```typescript
 export type ListPatientClinicalEventsRequestDTO = {
   patientId: string;
-  query?: PaginationQueryDto & {
-    kind?: ClinicalEventKindDto;
+  query?: PaginationQueryDTO & {
+    kind?: ClinicalEventKindDTO;
     sort?: "recordedAt" | "-recordedAt";
   };
 };
 
 export type ListPatientClinicalEventsResponseDTO = {
-  items: PatientClinicalEventDto[];
-  nextCursor?: CursorDto;
+  items: PatientClinicalEventDTO[];
+  nextCursor?: CursorDTO;
 };
 ```
 
@@ -644,11 +644,11 @@ A risk assessment is computed from a **snapshot** (latest measurement per kind +
 latest clinical flag per kind + computed age).
 
 ```typescript
-export type RiskModelDto = "PREVENT";
-export type RiskModelVersionDto = "2023";
-export type TimeHorizonDto = "10_YEARS" | "30_YEARS";
+export type RiskModelDTO = "PREVENT";
+export type RiskModelVersionDTO = "2023";
+export type TimeHorizonDTO = "10_YEARS" | "30_YEARS";
 
-export type PreventRiskSetDto = {
+export type PreventRiskSetDTO = {
   totalCVD: string;
   ASCVD: string;
   heartFailure: string;
@@ -656,21 +656,21 @@ export type PreventRiskSetDto = {
   stroke: string;
 };
 
-export type RiskAssessmentResultDto = {
-  timeHorizon: TimeHorizonDto;
+export type RiskAssessmentResultDTO = {
+  timeHorizon: TimeHorizonDTO;
   setName: "RISKS";
   setUnits: "%";
-  data: PreventRiskSetDto;
+  data: PreventRiskSetDTO;
 };
 
-export type RiskAssessmentDto = {
+export type RiskAssessmentDTO = {
   id: string;
   patientId: string;
-  model: RiskModelDto;
-  modelVersion: RiskModelVersionDto;
+  model: RiskModelDTO;
+  modelVersion: RiskModelVersionDTO;
   inputSnapshot: Record<string, unknown>;
-  results: RiskAssessmentResultDto[]; // typically 10y + 30y
-} & AuditDto;
+  results: RiskAssessmentResultDTO[]; // typically 10y + 30y
+} & AuditDTO;
 ```
 
 `POST /api/v1/patients/{patientId}/risk-assessments`
@@ -687,7 +687,7 @@ export type CreateRiskAssessmentRequestDTO = {
 };
 
 export type CreateRiskAssessmentResponseDTO = {
-  assessment: RiskAssessmentDto;
+  assessment: RiskAssessmentDTO;
 };
 ```
 
@@ -696,14 +696,14 @@ export type CreateRiskAssessmentResponseDTO = {
 ```typescript
 export type ListRiskAssessmentsRequestDTO = {
   patientId: string;
-  query?: PaginationQueryDto & {
+  query?: PaginationQueryDTO & {
     sort?: "createdAt" | "-createdAt";
   };
 };
 
 export type ListRiskAssessmentsResponseDTO = {
-  items: RiskAssessmentDto[];
-  nextCursor?: CursorDto;
+  items: RiskAssessmentDTO[];
+  nextCursor?: CursorDTO;
 };
 ```
 
@@ -716,7 +716,7 @@ export type GetRiskAssessmentRequestDTO = {
 };
 
 export type GetRiskAssessmentResponseDTO = {
-  assessment: RiskAssessmentDto;
+  assessment: RiskAssessmentDTO;
 };
 ```
 
@@ -730,25 +730,25 @@ Recommendations are produced from:
 2. rule-based logic
 
 ```typescript
-export type RecommendationPriorityDto = 1 | 2 | 3;
+export type RecommendationPriorityDTO = 1 | 2 | 3;
 
-export type RecommendationItemDto = {
+export type RecommendationItemDTO = {
   code: string; // stable identifier, e.g. STOP_SMOKING
   title: string;
   summary: string;
   rationale: string;
-  priority: RecommendationPriorityDto;
+  priority: RecommendationPriorityDTO;
   tags: string[];
   ruleHits: string[];
 };
 
-export type RecommendationsDto = {
+export type RecommendationsDTO = {
   id: string;
   patientId: string;
   assessmentId: string;
   rulesetId: string; // e.g. CVD_RECOMMENDATIONS_20260112
-  items: RecommendationItemDto[];
-} & AuditDto;
+  items: RecommendationItemDTO[];
+} & AuditDTO;
 ```
 
 `GET /api/v1/patients/{patientId}/risk-assessments/{assessmentId}/recommendations`
@@ -760,7 +760,7 @@ export type GetRecommendationsRequestDTO = {
 };
 
 export type GetRecommendationsResponseDTO = {
-  recommendations: RecommendationsDto | null; // null if not generated
+  recommendations: RecommendationsDTO | null; // null if not generated
 };
 ```
 
@@ -778,7 +778,7 @@ export type UpsertRecommendationsRequestDTO = {
 };
 
 export type UpsertRecommendationsResponseDTO = {
-  recommendations: RecommendationsDto;
+  recommendations: RecommendationsDTO;
 };
 ```
 
