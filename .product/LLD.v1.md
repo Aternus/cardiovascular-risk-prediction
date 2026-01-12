@@ -127,7 +127,7 @@ Fields:
 
 - \_id
 - patientId (ref `patients`)
-- kind ("DIABETES" | "SMOKER" | "ON_ANTIHYPERTENSIVE" | "ON_STATIN")
+- kind ("DIABETES" | "SMOKING_STATUS" | "ON_ANTIHYPERTENSIVE" | "ON_STATIN")
 - value (boolean)
 - recordedAt (unix ms)
 - source ("CLINICIAN" | "IMPORT")
@@ -409,6 +409,16 @@ export type PatientCreateDTO = {
 export type PatientUpdateDTO = Partial<PatientCreateDTO> & {
   isActive?: boolean;
 };
+
+export type PatientWithLatestRiskDTO = PatientDTO & {
+  latestRisk?: {
+    assessmentId: string;
+    createdAt: number;
+    timeHorizon: TimeHorizonDTO;
+    totalCVD: string;
+    riskCategory: "low" | "borderline" | "intermediate" | "high";
+  };
+};
 ```
 
 `POST /api/v1/patients`
@@ -416,6 +426,27 @@ export type PatientUpdateDTO = Partial<PatientCreateDTO> & {
 ```typescript
 export type CreatePatientRequestDTO = { body: PatientCreateDTO };
 export type CreatePatientResponseDTO = { patient: PatientDTO };
+```
+
+`POST /api/v1/patients/create-with-intake`
+
+Transactional create for the patient + initial measurements + initial clinical
+events used by the Create Patient UI.
+
+```typescript
+export type CreatePatientWithIntakeRequestDTO = {
+  body: {
+    patient: PatientCreateDTO;
+    measurements?: Array<Omit<PatientMeasurementCreateDTO, "patientId">>;
+    clinicalEvents?: Array<Omit<PatientClinicalEventCreateDTO, "patientId">>;
+  };
+};
+
+export type CreatePatientWithIntakeResponseDTO = {
+  patient: PatientDTO;
+  measurements: PatientMeasurementDTO[];
+  clinicalEvents: PatientClinicalEventDTO[];
+};
 ```
 
 `GET /api/v1/patients`
@@ -430,6 +461,22 @@ export type ListPatientsRequestDTO = {
 
 export type ListPatientsResponseDTO = {
   items: PatientDTO[];
+  nextCursor?: CursorDTO;
+};
+```
+
+`GET /api/v1/patients/with-latest-risk`
+
+```typescript
+export type ListPatientsWithLatestRiskRequestDTO = {
+  query?: PaginationQueryDTO & {
+    search?: string;
+    sort?: "createdAt" | "-createdAt";
+  };
+};
+
+export type ListPatientsWithLatestRiskResponseDTO = {
+  items: PatientWithLatestRiskDTO[];
   nextCursor?: CursorDTO;
 };
 ```
@@ -462,8 +509,10 @@ export type DeletePatientResponseDTO = { deleted: true };
 
 #### Patient Measurements
 
-These are time-series numeric facts (lab / vitals). We keep a _kind + value +
-unit + measuredAt_ record.
+These are time-series numeric facts (lab / vitals).
+
+⚠️ WE ALWAYS CREATE A NEW Measurement. WE DO NOT SUPPORT UPDATES. FIXING
+MISTAKES IS DONE VIA DELETE + CREATE.
 
 ```typescript
 export type MeasurementKindDTO =
@@ -540,20 +589,6 @@ export type ListPatientMeasurementsResponseDTO = {
 };
 ```
 
-`PATCH /api/v1/patients/{patientId}/measurements/{measurementId}`
-
-```typescript
-export type UpdatePatientMeasurementRequestDTO = {
-  patientId: string;
-  measurementId: string;
-  body: PatientMeasurementUpdateDTO;
-};
-
-export type UpdatePatientMeasurementResponseDTO = {
-  measurement: PatientMeasurementDTO;
-};
-```
-
 `DELETE /api/v1/patients/{patientId}/measurements/{measurementId}`
 
 ```typescript
@@ -567,16 +602,21 @@ export type DeletePatientMeasurementResponseDTO = { deleted: true };
 
 ---
 
-#### Patient Clinical Events (boolean flags)
+#### Patient Clinical Events
+
+These are time-series boolean facts (status changes).
+
+⚠️ WE ALWAYS CREATE A NEW Clinical Event. WE DO NOT SUPPORT UPDATES. FIXING
+MISTAKES IS DONE VIA DELETE + CREATE.
 
 ```typescript
 export type ClinicalEventKindDTO =
   | "DIABETES"
-  | "SMOKER"
+  | "SMOKING_STATUS"
   | "ON_ANTIHYPERTENSIVE"
   | "ON_STATIN";
 
-export type ClinicalEventSourceDTO = "PATIENT" | "CLINICIAN" | "IMPORT";
+export type ClinicalEventSourceDTO = "CLINICIAN" | "IMPORT";
 
 export type PatientClinicalEventDTO = {
   id: string;
@@ -643,6 +683,8 @@ export type ListPatientClinicalEventsResponseDTO = {
 A risk assessment is computed from a **snapshot** (latest measurement per kind +
 latest clinical flag per kind + computed age).
 
+⚠️ WE ALWAYS CREATE A NEW Assessment. WE DO NOT SUPPORT UPDATES OR DELETES.
+
 ```typescript
 export type RiskModelDTO = "PREVENT";
 export type RiskModelVersionDTO = "2023";
@@ -656,11 +698,18 @@ export type PreventRiskSetDTO = {
   stroke: string;
 };
 
+export type RiskFactorContributionDTO = {
+  factor: string; // e.g, `Age`
+  value: number; // signed value returned from ClinCalc, e.g, `-52`
+  direction: "PROTECTIVE" | "HARMFUL"; // based on the signed value returned from ClinCalc (minus is PROTECTIVE, plus is HARMFUL), e.g, `PROTECTIVE`
+};
+
 export type RiskAssessmentResultDTO = {
   timeHorizon: TimeHorizonDTO;
   setName: "RISKS";
   setUnits: "%";
   data: PreventRiskSetDTO;
+  contributions?: RiskFactorContributionDTO[]; // 10-year ASCVD factors only
 };
 
 export type RiskAssessmentDTO = {
@@ -669,13 +718,15 @@ export type RiskAssessmentDTO = {
   model: RiskModelDTO;
   modelVersion: RiskModelVersionDTO;
   inputSnapshot: Record<string, unknown>;
-  results: RiskAssessmentResultDTO[]; // typically 10y + 30y
+  results: RiskAssessmentResultDTO[];
 } & AuditDTO;
 ```
 
 `POST /api/v1/patients/{patientId}/risk-assessments`
 
-Computes a new assessment using external sources and stores it.
+Computes a new assessment using external sources and stores it. For MVP, this
+endpoint also generates recommendations in the same flow (in production, prefer
+an orchestrator).
 
 ```typescript
 export type CreateRiskAssessmentRequestDTO = {
@@ -688,6 +739,7 @@ export type CreateRiskAssessmentRequestDTO = {
 
 export type CreateRiskAssessmentResponseDTO = {
   assessment: RiskAssessmentDTO;
+  recommendations?: RecommendationsDTO;
 };
 ```
 
@@ -724,10 +776,7 @@ export type GetRiskAssessmentResponseDTO = {
 
 #### Recommendations
 
-Recommendations are produced from:
-
-1. the risk results AND
-2. rule-based logic
+Recommendations are produced from: the risk results AND rule-based logic.
 
 ```typescript
 export type RecommendationPriorityDTO = 1 | 2 | 3;
