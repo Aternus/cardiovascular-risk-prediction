@@ -23,15 +23,15 @@ You may use any approach, data sources, or existing research you find appropriat
 
 1. Top 3 most urgent risks: which risks are in the candidate list?
 2. What is the expected time horizon? (next 30 days? 1 year? 10 years?)
-3. How we combine probability + severity into urgency?
-4. What the system should do when data is missing? (ask for more info, fail, etc.)
+3. How do we combine probability and severity into urgency?
+4. What should the system do when data is missing? (ask for more info, fail, etc.)
 
 ### Answers from Doron
 
 1. Research it a bit and think what makes sense to you, come up with a top X list to choose from.
-2. ⁠Let’s say 10 years.
-3. ⁠You can come up with some pseudo logic for that, give each a weight, try basing it on some common method if exists.
-4. ⁠Let’s have the system always give you some feedback, it could also mention the degree of certainty or a call to action of what more data you need to provide to raise it.
+2. Let’s say 10 years.
+3. You can come up with some pseudo logic for that, give each a weight, try basing it on some common method if it exists.
+4. Let’s have the system always give you some feedback, it could also mention the degree of certainty or a call to action of what more data you need to provide to raise it.
 
 You have the freedom to make assumptions and cut corners.
 You should keep a list of assumptions you made and corners cut (since this is a homework exercise) and how it would be different in an enterprise grade system.
@@ -47,12 +47,12 @@ You should keep a list of assumptions you made and corners cut (since this is a 
   - allow the patient to edit the information
 - Provide personalized suggestions
   - cardiovascular related health risks
-  - actionable output/suggestion (e.g. stopping smoking will greatly reduce the risk to X)
+  - actionable output/suggestion (e.g., stopping smoking will greatly reduce the risk to X)
 
 ## Out of Scope
 
 - Manage patient information
-  - ability to upload data from wearable device and extract heart related data
+  - ability to upload data from a wearable device and extract heart-related data
 
 ## Terms
 
@@ -61,11 +61,11 @@ You should keep a list of assumptions you made and corners cut (since this is a 
 3. LDL-C: Low Density Lipoprotein Cholesterol, aka. "bad" cholesterol.
 4. Coronary: relating to or denoting the arteries which surround and supply the heart.
 5. Aortic: relating to the aorta, the main artery of the body.
-6. Atherosclerosis: a specific type of arteriosclerosis. Atherosclerosis is the buildup of fats, cholesterol and other substances in and on the artery walls. This buildup is called plaque. The plaque can cause arteries to narrow, blocking blood flow. The plaque also can burst, leading to a blood clot.
-7. ASCVD: Atherosclerotic Cardiovascular Disease, is a serious condition caused by plaque building up in artery walls, narrowing them and restricting blood flow to organs, leading to heart attacks, strokes, peripheral artery disease (PAD), and aneurysms, and is a leading cause of death globally.
+6. Atherosclerosis: a specific type of arteriosclerosis. Atherosclerosis is the buildup of fats, cholesterol, and other substances in and on the artery walls. This buildup is called plaque. The plaque can cause arteries to narrow, blocking blood flow. The plaque also can burst, leading to a blood clot.
+7. ASCVD: Atherosclerotic Cardiovascular Disease is a serious condition caused by plaque building up in artery walls, narrowing them, and restricting blood flow to organs, leading to heart attacks, strokes, peripheral artery disease (PAD), and aneurysms, and is a leading cause of death globally.
    - It's a progressive disease that developers over time, often fueled by factors like high cholesterol, diabetes, and hypertension, and includes many specific heart and blood vessel problems.
    - Involves:
-     - Coronary Heart Disease (CHD): plaque in heart arteries (e.g. heart attack, angina).
+     - Coronary Heart Disease (CHD): plaque in heart arteries (e.g., heart attack, angina).
      - Cerebrovascular Disease: Blockages in brain arteries (e.g., ischemic stroke, TIA).
      - Peripheral Artery Disease (PAD): Plaque in leg/limb arteries (e.g., painful cramping).
      - Aortic Disease: Plaque in the aorta (e.g., abdominal aortic aneurysm).
