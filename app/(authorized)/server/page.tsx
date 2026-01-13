@@ -12,7 +12,7 @@ export default async function ServerPage() {
   const data = preloadedQueryResult(preloaded);
 
   return (
-    <main className="p-8 flex flex-col gap-6 mx-auto max-w-2xl">
+    <div className="flex flex-col gap-6 mx-auto max-w-2xl">
       <div className="flex items-center justify-center gap-4">
         <div className="flex items-center gap-4">
           <Image src="/convex.svg" alt="Convex Logo" width={48} height={48} />
@@ -47,6 +47,6 @@ export default async function ServerPage() {
         </code>
       </div>
       <Home preloaded={preloaded} />
-    </main>
+    </div>
   );
 }

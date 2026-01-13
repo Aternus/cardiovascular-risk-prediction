@@ -1,6 +1,6 @@
 "use client";
 
-import { MultiStepOnboardingForm } from "@/app/onboarding/MultiStepOnboardingForm";
+import { MultiStepOnboardingForm } from "./MultiStepOnboardingForm";
 
 export default function Onboarding() {
   return (
