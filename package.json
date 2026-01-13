@@ -8,7 +8,7 @@
     "dev:backend": "convex dev",
     "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\"",
     "build": "next build",
-    "build:ci": "npm ci && npm run build",
+    "build:ci": "npm ci && npm run build && npx convex deploy -y",
     "start": "next start",
     "lint": "eslint . --ignore-pattern \"convex/_generated/**\"",
     "format": "prettier --write ."
