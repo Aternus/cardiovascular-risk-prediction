@@ -100,17 +100,17 @@ export default function Home() {
             accurate PREVENT scores and factor insights.
           </div>
 
-          <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-5 text-sm text-emerald-900 shadow-sm backdrop-blur dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-100">
+          <div className="flex flex-col rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-5 text-xs text-emerald-900 shadow-sm backdrop-blur dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-100">
             This algorithm has been clinically validated, so you can trust the
             results as part of your cardiovascular risk workflow.
-            <a
+            <Link
               className="mt-3 inline-flex text-xs font-medium text-emerald-800/70 underline decoration-1 underline-offset-4 transition hover:text-emerald-900 dark:text-emerald-200/70 dark:hover:text-emerald-100"
               href="https://professional.heart.org/en/guidelines-and-statements/about-prevent-calculator"
               target="_blank"
               rel="noreferrer"
             >
               PREVENT validation details →
-            </a>
+            </Link>
           </div>
         </div>
       </section>
