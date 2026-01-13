@@ -37,6 +37,7 @@ import {
   patientProfileSchema,
   SEX_AT_BIRTH_OPTIONS,
 } from "@/convex/validators/patients";
+import { formatDateToYMD, parseDateFromYMD } from "@/lib/date";
 import {
   getDateYearsAgo,
   getTodayDate,
@@ -61,31 +62,6 @@ const FIELD_RANGES = {
   bmi: { min: 18.5, max: 39.9 },
   egfr: { min: 15, max: 150 },
 } as const;
-
-const formatDateToYmd = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const parseDateFromYmd = (value: string) => {
-  if (!value) {
-    return undefined;
-  }
-
-  const parts = value.split("-");
-  if (parts.length !== 3) {
-    return undefined;
-  }
-
-  const [year, month, day] = parts.map(Number);
-  if (!year || !month || !day) {
-    return undefined;
-  }
-
-  return new Date(year, month - 1, day);
-};
 
 const getFieldErrors = (error: unknown): FieldErrorType[] => {
   if (!(error instanceof ConvexError)) {
@@ -366,9 +342,9 @@ export const MultiStepOnboardingForm = () => {
                   <FieldLabel htmlFor="dateOfBirth">Date of Birth</FieldLabel>
                   <DatePicker
                     id="dateOfBirth"
-                    value={parseDateFromYmd(field.value)}
+                    value={parseDateFromYMD(field.value)}
                     onChange={(date) => {
-                      field.onChange(date ? formatDateToYmd(date) : "");
+                      field.onChange(date ? formatDateToYMD(date) : "");
                     }}
                     placeholder=""
                     minDate={minDateOfBirth}
