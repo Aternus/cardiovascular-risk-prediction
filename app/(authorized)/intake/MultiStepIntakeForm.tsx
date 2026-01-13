@@ -129,7 +129,7 @@ const steps: TStep[] = [
   },
 ];
 
-export const MultiStepOnboardingForm = () => {
+export const MultiStepIntakeForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const hasHydratedRef = useRef(false);
   const router = useRouter();
@@ -139,6 +139,8 @@ export const MultiStepOnboardingForm = () => {
 
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
+
+  const isDataLoading = profileData === undefined || intakeData === undefined;
 
   const today = getTodayDate();
   const minDateOfBirth = getDateYearsAgo(FIELD_RANGES.age.max, today);
@@ -312,7 +314,7 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder="Kiril"
                     autoComplete="off"
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription></FieldDescription>
                   {fieldState.invalid && (
@@ -334,7 +336,7 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder="Reznik"
                     autoComplete="off"
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription></FieldDescription>
                   {fieldState.invalid && (
@@ -354,7 +356,7 @@ export const MultiStepOnboardingForm = () => {
                     name={field.name}
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={false}
+                    disabled={isDataLoading}
                   >
                     <SelectTrigger
                       id="sexAtBirth"
@@ -396,7 +398,7 @@ export const MultiStepOnboardingForm = () => {
                     placeholder=""
                     minDate={minDateOfBirth}
                     maxDate={maxDateOfBirth}
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription>
                     Age {FIELD_RANGES.age.min}–{FIELD_RANGES.age.max} years
@@ -433,7 +435,7 @@ export const MultiStepOnboardingForm = () => {
                     step="any"
                     min={FIELD_RANGES.totalCholesterol.min}
                     max={FIELD_RANGES.totalCholesterol.max}
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription>130–320 mg/dL</FieldDescription>
                   {fieldState.invalid && (
@@ -462,7 +464,7 @@ export const MultiStepOnboardingForm = () => {
                     step="any"
                     min={FIELD_RANGES.hdlCholesterol.min}
                     max={FIELD_RANGES.hdlCholesterol.max}
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription>20–100 mg/dL</FieldDescription>
                   {fieldState.invalid && (
@@ -489,7 +491,7 @@ export const MultiStepOnboardingForm = () => {
                     step="any"
                     min={FIELD_RANGES.systolicBP.min}
                     max={FIELD_RANGES.systolicBP.max}
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription>90–200 mmHg</FieldDescription>
                   {fieldState.invalid && (
@@ -516,7 +518,7 @@ export const MultiStepOnboardingForm = () => {
                     step="any"
                     min={FIELD_RANGES.bmi.min}
                     max={FIELD_RANGES.bmi.max}
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription>18.5–39.9 kg/m2</FieldDescription>
                   {fieldState.invalid && (
@@ -543,7 +545,7 @@ export const MultiStepOnboardingForm = () => {
                     step="any"
                     min={FIELD_RANGES.eGFR.min}
                     max={FIELD_RANGES.eGFR.max}
-                    disabled={false}
+                    disabled={isDataLoading}
                   />
                   <FieldDescription>15–150 mL/min/1.73 m2</FieldDescription>
                   {fieldState.invalid && (
@@ -579,7 +581,7 @@ export const MultiStepOnboardingForm = () => {
                   <Switch
                     id="isDiabetes"
                     name={field.name}
-                    disabled={false}
+                    disabled={isDataLoading}
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
@@ -607,7 +609,7 @@ export const MultiStepOnboardingForm = () => {
                   <Switch
                     id="isSmoker"
                     name={field.name}
-                    disabled={false}
+                    disabled={isDataLoading}
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
@@ -637,7 +639,7 @@ export const MultiStepOnboardingForm = () => {
                   <Switch
                     id="isAntiHypertensiveMedication"
                     name={field.name}
-                    disabled={false}
+                    disabled={isDataLoading}
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
@@ -663,7 +665,7 @@ export const MultiStepOnboardingForm = () => {
                   <Switch
                     id="isStatins"
                     name={field.name}
-                    disabled={false}
+                    disabled={isDataLoading}
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
@@ -695,7 +697,7 @@ export const MultiStepOnboardingForm = () => {
         <Progress value={progress} />
       </CardHeader>
       <CardContent>
-        <form id="multi-step-onboarding" onSubmit={form.handleSubmit(onSubmit)}>
+        <form id="multi-step-intake" onSubmit={form.handleSubmit(onSubmit)}>
           {renderCurrentStepContent()}
         </form>
       </CardContent>
@@ -707,6 +709,7 @@ export const MultiStepOnboardingForm = () => {
               variant="ghost"
               onClick={handleBackButton}
               className="cursor-pointer"
+              disabled={isDataLoading}
             >
               <ChevronLeft /> Back
             </Button>
@@ -717,6 +720,7 @@ export const MultiStepOnboardingForm = () => {
               variant="secondary"
               onClick={handleNextButton}
               className="cursor-pointer"
+              disabled={isDataLoading}
             >
               Next
               <ChevronRight />
@@ -725,8 +729,8 @@ export const MultiStepOnboardingForm = () => {
           {isLastStep && (
             <Button
               type="submit"
-              form="multi-step-onboarding"
-              disabled={form.formState.isSubmitting}
+              form="multi-step-intake"
+              disabled={isDataLoading || form.formState.isSubmitting}
               className="cursor-pointer"
             >
               {form.formState.isSubmitting ? <Spinner /> : "Submit"}

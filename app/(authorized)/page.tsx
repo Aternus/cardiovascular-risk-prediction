@@ -25,7 +25,7 @@ export default function Home() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Link
-              href="/onboarding"
+              href="/intake"
               className="group relative overflow-hidden rounded-2xl border border-border/80 bg-card/80 p-6 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
             >
               <div
@@ -43,7 +43,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-foreground">
-                    Onboarding
+                    Intake
                   </h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Capture demographics, vitals, lab values, and clinical
