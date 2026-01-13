@@ -67,6 +67,10 @@ export const clinCalcCalculateRiskAssessmentRequestDTOSchema = z.object({
   body: clinCalcPreventSchema,
 });
 
+export type TClinCalcCalculateRiskAssessmentRequestDTO = {
+  body: TClinCalcPREVENTAssessmentRequestDTO;
+};
+
 export type TClinCalcCalculateRiskAssessmentResponseDTO = {
   contributions: TClinCalcPREVENTAssessmentResponseDTO;
 };

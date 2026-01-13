@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  readJsonResponse,
+  toFriendlyFetchError,
+} from "@/app/(authorized)/risk-assessment/_lib/transport";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -25,239 +29,50 @@ import { getAgeInYears } from "@/lib/form.utils";
 import { useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  eventBreakdownConfig,
+  formatPercent,
+  formatRiskFactorLabel,
+  formatSignedPercent,
+  formatUpdatedLabel,
+  getInterpretationLabel,
+  getPercentFromOutput,
+  interpretationDescriptions,
+  interpretationLevels,
+  parsePreventBreakdown,
+  stripHtml,
+} from "./_lib/utils";
+
 import type {
+  TAssessmentStatus,
+  TEventBreakdown,
+  TRiskCategory,
+  TRiskFactor,
+  TRiskFactorImpact,
+} from "@/app/(authorized)/risk-assessment/_lib/types";
+import type {
+  TClinCalcCalculateRiskAssessmentRequestDTO,
   TClinCalcCalculateRiskAssessmentResponseDTO,
-  TClinCalcPREVENTAssessmentRequestDTO,
 } from "@/contracts/v1/clincalc";
 import type {
+  TmdCalcCalculateRiskAssessmentRequestDTO,
   TmdCalcCalculateRiskAssessmentResponseDTO,
-  TMdCalcPREVENTAssessmentRequestDTO,
 } from "@/contracts/v1/mdcalc";
-
-type TAssessmentStatus = "idle" | "loading" | "success" | "partial" | "error";
-type TRiskCategory = "Low" | "Borderline" | "Intermediate" | "High" | "Unknown";
-type TRiskFactorImpact = "Harmful" | "Protective";
-
-type TRiskFactor = {
-  label: string;
-  impact: TRiskFactorImpact;
-  delta: string;
-  strength: number;
-};
-
-type TEventBreakdown = {
-  label: string;
-  description: string;
-  value: string;
-};
-
-type TmdCalcCalculateRiskAssessmentRequestDTO = {
-  body: TMdCalcPREVENTAssessmentRequestDTO;
-};
-
-type TClinCalcCalculateRiskAssessmentRequestDTO = {
-  body: TClinCalcPREVENTAssessmentRequestDTO;
-};
-
-const interpretationLevels = [
-  { label: "Low", range: "0-5%" },
-  { label: "Borderline", range: "5-7.5%" },
-  { label: "Intermediate", range: "7.5-20%" },
-  { label: "High", range: "20%+" },
-];
-
-const interpretationDescriptions: Record<
-  Exclude<TRiskCategory, "Unknown">,
-  string
-> = {
-  Low: "Your 10-year risk is low. Keep up healthy habits and routine checkups.",
-  Borderline:
-    "Your 10-year risk is borderline. Consider lifestyle changes and discuss options with your care team.",
-  Intermediate:
-    "Your 10-year risk is intermediate. Review preventive therapy and lifestyle changes with your care team.",
-  High: "Your 10-year risk is high. Discuss preventive therapy and follow up with your care team.",
-};
-
-const eventBreakdownConfig = [
-  {
-    label: "CHD",
-    description: "Coronary heart disease",
-    key: "chd",
-    keywords: [/coronary/i, /\bchd\b/i, /myocard/i],
-  },
-  {
-    label: "Stroke",
-    description: "Ischemic or hemorrhagic",
-    key: "stroke",
-    keywords: [/stroke/i],
-  },
-  {
-    label: "HF",
-    description: "Heart failure",
-    key: "hf",
-    keywords: [/heart failure/i, /\bhf\b/i],
-  },
-] as const;
-
-const parsePercentValue = (value: string) => {
-  const match = value.match(/-?\d+(\.\d+)?/);
-  return match ? Number.parseFloat(match[0]) : null;
-};
-
-const percentFormatter = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
-
-const formatPercent = (value: number | null) =>
-  value === null ? "N/A" : `${percentFormatter.format(value)}%`;
-
-const formatSignedPercent = (value: number) => {
-  const rounded = value.toFixed(1);
-  return `${value >= 0 ? "+" : ""}${rounded}%`;
-};
-
-const getInterpretationLabel = (
-  value: number,
-): Exclude<TRiskCategory, "Unknown"> => {
-  if (value < 5) {
-    return "Low";
-  }
-  if (value < 7.5) {
-    return "Borderline";
-  }
-  if (value < 20) {
-    return "Intermediate";
-  }
-  return "High";
-};
-
-const getPercentFromOutput = (output?: {
-  name: string;
-  value: string;
-  value_text: string;
-  message: string;
-}) => {
-  if (!output) {
-    return null;
-  }
-  return (
-    parsePercentValue(output.value_text) ?? parsePercentValue(output.value)
-  );
-};
-
-const stripHtml = (value: string) => value.replace(/<[^>]*>/g, " ");
-
-const parsePreventBreakdown = (message: string) => {
-  const cleaned = stripHtml(message);
-  const entries: Array<[RegExp, string]> = [
-    [/10-?Year ASCVD Risk:\s*([0-9.]+)%/i, "ascvd"],
-    [/10-?Year Heart Failure Risk:\s*([0-9.]+)%/i, "hf"],
-    [/10-?Year Coronary Heart Disease Risk:\s*([0-9.]+)%/i, "chd"],
-    [/10-?Year Stroke Risk:\s*([0-9.]+)%/i, "stroke"],
-  ];
-
-  const result: Partial<Record<string, number>> = {};
-  for (const [regex, key] of entries) {
-    const match = cleaned.match(regex);
-    if (match && match[1]) {
-      result[key] = Number.parseFloat(match[1]);
-    }
-  }
-
-  return result;
-};
-
-const formatUpdatedLabel = (date: Date) =>
-  `Updated ${date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })}`;
-
-const formatRiskFactorLabel = (value: string) => {
-  const normalized = value.toLowerCase();
-
-  if (normalized.includes("total cholesterol")) {
-    return "Total cholesterol";
-  }
-  if (normalized.includes("hdl")) {
-    return "HDL";
-  }
-  if (normalized.includes("systolic") || normalized.includes("sbp")) {
-    return "Systolic BP";
-  }
-  if (normalized.includes("egfr")) {
-    return "eGFR";
-  }
-  if (normalized.includes("body mass") || normalized.includes("bmi")) {
-    return "BMI";
-  }
-  if (normalized.includes("diabetes")) {
-    return "Diabetes";
-  }
-  if (normalized.includes("smoker")) {
-    return "Smoking";
-  }
-  if (normalized.includes("statin")) {
-    return "Statin";
-  }
-  if (
-    normalized.includes("bp treatment") ||
-    normalized.includes("anti-hypertensive") ||
-    normalized.includes("antihypertensive")
-  ) {
-    return "Antihypertensive";
-  }
-  if (normalized.includes("age")) {
-    return "Age";
-  }
-
-  return value;
-};
-
-const readJsonResponse = async <T,>(
-  response: Response,
-  fallbackMessage: string,
-) => {
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch (error) {
-    void error;
-    throw new Error(fallbackMessage);
-  }
-
-  if (!response.ok) {
-    const errorPayload = payload as { error?: unknown };
-    const errorMessage =
-      errorPayload && typeof errorPayload.error === "string"
-        ? errorPayload.error
-        : fallbackMessage;
-    throw new Error(errorMessage);
-  }
-
-  return payload as T;
-};
-
-const toFriendlyFetchError = (label: string, error: unknown) => {
-  if (error instanceof Error) {
-    const message = error.message;
-    if (
-      /networkerror|failed to fetch|fetch failed|load failed/i.test(message)
-    ) {
-      return `${label} is unreachable right now.`;
-    }
-
-    return message;
-  }
-
-  return `${label} is unavailable right now.`;
-};
 
 export default function RiskAssessment() {
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
+
+  const [assessmentStatus, setAssessmentStatus] =
+    useState<TAssessmentStatus>("idle");
+  const [assessmentErrors, setAssessmentErrors] = useState<string[]>([]);
+  const [mdCalcAssessments, setMdCalcAssessments] = useState<
+    TmdCalcCalculateRiskAssessmentResponseDTO["assessments"] | null
+  >(null);
+  const [clinCalcContributions, setClinCalcContributions] = useState<
+    TClinCalcCalculateRiskAssessmentResponseDTO["contributions"] | null
+  >(null);
+
   const updatedLabel = useMemo(() => formatUpdatedLabel(new Date()), []);
 
   const birthDate = useMemo(() => {
@@ -274,6 +89,7 @@ export default function RiskAssessment() {
 
     return getAgeInYears(birthDate);
   }, [birthDate]);
+
   const validationError = useMemo(() => {
     if (profileData === undefined || intakeData === undefined) {
       return null;
@@ -293,16 +109,6 @@ export default function RiskAssessment() {
 
     return null;
   }, [profileData, intakeData, birthDate, age]);
-
-  const [assessmentStatus, setAssessmentStatus] =
-    useState<TAssessmentStatus>("idle");
-  const [assessmentErrors, setAssessmentErrors] = useState<string[]>([]);
-  const [mdCalcAssessments, setMdCalcAssessments] = useState<
-    TmdCalcCalculateRiskAssessmentResponseDTO["assessments"] | null
-  >(null);
-  const [clinCalcContributions, setClinCalcContributions] = useState<
-    TClinCalcCalculateRiskAssessmentResponseDTO["contributions"] | null
-  >(null);
 
   const mdCalcPayload =
     useMemo<TmdCalcCalculateRiskAssessmentRequestDTO | null>(() => {
@@ -449,6 +255,7 @@ export default function RiskAssessment() {
 
   const displayMdCalcAssessments =
     mdCalcPayload && assessmentStatus !== "loading" ? mdCalcAssessments : null;
+
   const displayClinCalcContributions =
     clinCalcPayload && assessmentStatus !== "loading"
       ? clinCalcContributions

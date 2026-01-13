@@ -43,6 +43,10 @@ export const mdCalcCalculateRiskAssessmentRequestDTOSchema = z.object({
   body: mdCalcPreventSchema,
 });
 
+export type TmdCalcCalculateRiskAssessmentRequestDTO = {
+  body: TMdCalcPREVENTAssessmentRequestDTO;
+};
+
 export type TmdCalcCalculateRiskAssessmentResponseDTO = {
   assessments: TMdCalcPREVENTAssessmentResponseDTO;
 };
