@@ -138,7 +138,8 @@ export const MultiStepOnboardingForm = () => {
   const upsertProfile = useMutation(api.patients.upsertProfile);
   const upsertIntake = useMutation(api.intake.upsertIntake);
 
-  const onboardingData = useQuery(api.patients.getOnboardingData);
+  const profileData = useQuery(api.patients.getProfile);
+  const intakeData = useQuery(api.intake.getIntake);
 
   const today = getTodayDate();
   const minDateOfBirth = getDateYearsAgo(FIELD_RANGES.age.max, today);
@@ -173,40 +174,44 @@ export const MultiStepOnboardingForm = () => {
   const isDirty = form.formState.isDirty;
 
   useEffect(() => {
-    if (!onboardingData || hasHydratedRef.current || isDirty) {
+    if (
+      profileData === undefined ||
+      intakeData === undefined ||
+      hasHydratedRef.current ||
+      isDirty
+    ) {
+      return;
+    }
+
+    if (!profileData && !intakeData) {
       return;
     }
 
     const currentValues = form.getValues();
     const nextValues: TFormInput = {
       ...currentValues,
-      firstName: onboardingData.profile.firstName,
-      lastName: onboardingData.profile.lastName,
-      sexAtBirth: onboardingData.profile.sexAtBirth,
-      dateOfBirth: onboardingData.profile.dateOfBirth,
+      firstName: profileData?.firstName ?? currentValues.firstName,
+      lastName: profileData?.lastName ?? currentValues.lastName,
+      sexAtBirth: profileData?.sexAtBirth ?? currentValues.sexAtBirth,
+      dateOfBirth: profileData?.dateOfBirth ?? currentValues.dateOfBirth,
       totalCholesterol:
-        onboardingData.measurements.totalCholesterol ??
-        currentValues.totalCholesterol,
+        intakeData?.totalCholesterol ?? currentValues.totalCholesterol,
       hdlCholesterol:
-        onboardingData.measurements.hdlCholesterol ??
-        currentValues.hdlCholesterol,
-      systolicBp:
-        onboardingData.measurements.systolicBP ?? currentValues.systolicBp,
-      bmi: onboardingData.measurements.bmi ?? currentValues.bmi,
-      egfr: onboardingData.measurements.eGFR ?? currentValues.egfr,
-      isDiabetes:
-        onboardingData.clinical.isDiabetes ?? currentValues.isDiabetes,
-      isSmoker: onboardingData.clinical.isSmoker ?? currentValues.isSmoker,
+        intakeData?.hdlCholesterol ?? currentValues.hdlCholesterol,
+      systolicBp: intakeData?.systolicBP ?? currentValues.systolicBp,
+      bmi: intakeData?.bmi ?? currentValues.bmi,
+      egfr: intakeData?.eGFR ?? currentValues.egfr,
+      isDiabetes: intakeData?.isDiabetes ?? currentValues.isDiabetes,
+      isSmoker: intakeData?.isSmoker ?? currentValues.isSmoker,
       isAntiHypertensiveMedication:
-        onboardingData.clinical.isTakingAntihypertensive ??
+        intakeData?.isTakingAntihypertensive ??
         currentValues.isAntiHypertensiveMedication,
-      isStatins:
-        onboardingData.clinical.isTakingStatin ?? currentValues.isStatins,
+      isStatins: intakeData?.isTakingStatin ?? currentValues.isStatins,
     };
 
     form.reset(nextValues, { keepDirtyValues: true });
     hasHydratedRef.current = true;
-  }, [form, isDirty, onboardingData]);
+  }, [form, profileData, intakeData, isDirty]);
 
   const handleNextButton = async () => {
     const currentFields = steps[currentStep].fields;
@@ -697,7 +702,12 @@ export const MultiStepOnboardingForm = () => {
       <CardFooter>
         <Field className="justify-between" orientation="horizontal">
           {currentStep > 0 && (
-            <Button type="button" variant="ghost" onClick={handleBackButton}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleBackButton}
+              className="cursor-pointer"
+            >
               <ChevronLeft /> Back
             </Button>
           )}
@@ -706,6 +716,7 @@ export const MultiStepOnboardingForm = () => {
               type="button"
               variant="secondary"
               onClick={handleNextButton}
+              className="cursor-pointer"
             >
               Next
               <ChevronRight />

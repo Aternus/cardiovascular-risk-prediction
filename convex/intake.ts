@@ -194,17 +194,20 @@ export const upsertIntake = mutation({
 
 export const getIntake = query({
   args: {},
-  returns: {
-    totalCholesterol: v.number(),
-    hdlCholesterol: v.number(),
-    systolicBP: v.number(),
-    bmi: v.number(),
-    eGFR: v.number(),
-    isDiabetes: v.boolean(),
-    isSmoker: v.boolean(),
-    isTakingAntihypertensive: v.boolean(),
-    isTakingStatin: v.boolean(),
-  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      totalCholesterol: v.number(),
+      hdlCholesterol: v.number(),
+      systolicBP: v.number(),
+      bmi: v.number(),
+      eGFR: v.number(),
+      isDiabetes: v.boolean(),
+      isSmoker: v.boolean(),
+      isTakingAntihypertensive: v.boolean(),
+      isTakingStatin: v.boolean(),
+    }),
+  ),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
 
@@ -218,10 +221,7 @@ export const getIntake = query({
       .unique();
 
     if (!patient) {
-      throw new ConvexError({
-        kind: "not_found",
-        message: "Patient profile not found",
-      });
+      return null;
     }
 
     const [measurements, clinical] = await Promise.all([
@@ -240,10 +240,7 @@ export const getIntake = query({
       clinical.ANTIHYPERTENSIVE === null ||
       clinical.STATIN === null
     ) {
-      throw new ConvexError({
-        kind: "not_found",
-        message: "Patient intake data not found",
-      });
+      return null;
     }
 
     return {
