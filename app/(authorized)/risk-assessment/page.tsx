@@ -403,11 +403,14 @@ export default function RiskAssessment() {
     : "We couldn't retrieve results from the server.";
   const statusMessages = hasAssessmentErrors ? combinedErrors : [];
   const statusCardClassName = isMissingData
-    ? "border-muted/40 bg-muted/15"
+    ? "border-amber-300/80 bg-amber-50/80 shadow-md dark:border-amber-500/30 dark:bg-amber-950/50"
     : "border-destructive/40 bg-destructive/10";
   const statusCardTextClassName = isMissingData
-    ? "text-muted-foreground"
+    ? "text-amber-800 dark:text-amber-200"
     : "text-destructive";
+  const statusCardTitleClassName = isMissingData
+    ? "text-lg font-semibold text-amber-950 dark:text-amber-100"
+    : "text-base text-destructive";
 
   const interpretationBadgeVariant =
     interpretation === "Unknown" ? "outline" : "default";
@@ -504,7 +507,7 @@ export default function RiskAssessment() {
           {showStatusCard ? (
             <Card className={statusCardClassName}>
               <CardHeader className="pb-3">
-                <CardTitle className={`text-base ${statusCardTextClassName}`}>
+                <CardTitle className={statusCardTitleClassName}>
                   {statusCardTitle}
                 </CardTitle>
                 <CardDescription className={statusCardTextClassName}>
