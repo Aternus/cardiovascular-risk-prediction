@@ -1,10 +1,10 @@
 import { ConvexError, v } from "convex/values";
 
-import { patientProfileSchema } from "../lib/validators/patientProfile";
 import { mutation } from "./_generated/server";
+import { patientProfileSchema } from "./validators/patients";
 
-import type { SexAtBirth } from "../lib/validators/patientProfile";
-import type { FieldError } from "../lib/validators/types";
+import type { TSexAtBirth } from "./validators/patients";
+import type { TFieldError } from "./validators/types";
 
 export const upsertProfile = mutation({
   args: {
@@ -22,7 +22,7 @@ export const upsertProfile = mutation({
 
     const parsed = patientProfileSchema.safeParse(args);
     if (!parsed.success) {
-      const fieldErrors: FieldError[] = parsed.error.issues.map((issue) => ({
+      const fieldErrors: TFieldError[] = parsed.error.issues.map((issue) => ({
         field: issue.path[0] ? String(issue.path[0]) : "form",
         message: issue.message,
       }));
@@ -37,7 +37,7 @@ export const upsertProfile = mutation({
 
     const profileData = {
       ...parsed.data,
-      sexAtBirth: parsed.data.sexAtBirth as SexAtBirth,
+      sexAtBirth: parsed.data.sexAtBirth as TSexAtBirth,
     };
 
     if (existing) {

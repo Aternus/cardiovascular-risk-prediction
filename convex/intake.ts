@@ -1,31 +1,10 @@
 import { ConvexError, v } from "convex/values";
 
 import { mutation } from "./_generated/server";
+import { validateRange } from "./validators/form";
+import { PATIENT_MEASUREMENT_LIMITS } from "./validators/intake";
 
-import type { FieldError } from "../lib/validators/types";
-
-const FIELD_RANGES = {
-  totalCholesterol: { min: 130, max: 320 },
-  hdlCholesterol: { min: 20, max: 100 },
-  systolicBP: { min: 90, max: 200 },
-  bmi: { min: 18.5, max: 39.9 },
-  eGFR: { min: 15, max: 150 },
-} as const;
-
-const validateRange = (
-  errors: FieldError[],
-  field: string,
-  label: string,
-  value: number,
-  range: { min: number; max: number },
-) => {
-  if (value < range.min || value > range.max) {
-    errors.push({
-      field,
-      message: `${label} must be between ${range.min} and ${range.max}`,
-    });
-  }
-};
+import type { TFieldError } from "./validators/types";
 
 export const upsertIntake = mutation({
   args: {
@@ -46,30 +25,42 @@ export const upsertIntake = mutation({
       throw new ConvexError({ kind: "auth", message: "Not authenticated" });
     }
 
-    const errors: FieldError[] = [];
+    const errors: TFieldError[] = [];
     validateRange(
       errors,
       "totalCholesterol",
       "Total cholesterol",
       args.totalCholesterol,
-      FIELD_RANGES.totalCholesterol,
+      PATIENT_MEASUREMENT_LIMITS.totalCholesterol,
     );
     validateRange(
       errors,
       "hdlCholesterol",
       "HDL cholesterol",
       args.hdlCholesterol,
-      FIELD_RANGES.hdlCholesterol,
+      PATIENT_MEASUREMENT_LIMITS.hdlCholesterol,
     );
     validateRange(
       errors,
       "systolicBP",
       "Systolic BP",
       args.systolicBP,
-      FIELD_RANGES.systolicBP,
+      PATIENT_MEASUREMENT_LIMITS.systolicBP,
     );
-    validateRange(errors, "bmi", "BMI", args.bmi, FIELD_RANGES.bmi);
-    validateRange(errors, "eGFR", "eGFR", args.eGFR, FIELD_RANGES.eGFR);
+    validateRange(
+      errors,
+      "bmi",
+      "BMI",
+      args.bmi,
+      PATIENT_MEASUREMENT_LIMITS.bmi,
+    );
+    validateRange(
+      errors,
+      "eGFR",
+      "eGFR",
+      args.eGFR,
+      PATIENT_MEASUREMENT_LIMITS.eGFR,
+    );
 
     if (errors.length > 0) {
       throw new ConvexError({ kind: "validation", fieldErrors: errors });

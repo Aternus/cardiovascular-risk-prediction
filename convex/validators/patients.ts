@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { getAgeInYearsUTC } from "./form";
+
 export const PATIENT_PROFILE_LIMITS = {
   age: { min: 30, max: 79 },
   name: { min: 2, max: 255 },
@@ -7,7 +9,7 @@ export const PATIENT_PROFILE_LIMITS = {
 
 const SEX_AT_BIRTH_VALUES = ["FEMALE", "MALE"] as const;
 
-export type SexAtBirth = (typeof SEX_AT_BIRTH_VALUES)[number];
+export type TSexAtBirth = (typeof SEX_AT_BIRTH_VALUES)[number];
 
 export const SEX_AT_BIRTH_OPTIONS = [
   { value: "MALE", label: "Male" },
@@ -15,20 +17,6 @@ export const SEX_AT_BIRTH_OPTIONS = [
 ] as const;
 
 const DATE_OF_BIRTH_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-const getAgeInYearsUTC = (date: Date, today = new Date()) => {
-  let age = today.getUTCFullYear() - date.getUTCFullYear();
-  const monthDiff = today.getUTCMonth() - date.getUTCMonth();
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getUTCDate() < date.getUTCDate())
-  ) {
-    age -= 1;
-  }
-
-  return age;
-};
 
 const nameSchema = (label: string) =>
   z

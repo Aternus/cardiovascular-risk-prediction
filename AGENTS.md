@@ -36,6 +36,8 @@
 
 - TypeScript with `strict` enabled; keep types explicit when behavior is
   unclear.
+- Prefix every custom TypeScript type with `T` (example: `TPatientProfile`,
+  `TRiskAssessmentResult`).
 - Formatting follows existing file style; use `npm run format` (Prettier) and
   `npm run lint` (ESLint) before pushing changes.
 - Naming: React components use PascalCase (`RiskChart.tsx`), hooks use `useX`,

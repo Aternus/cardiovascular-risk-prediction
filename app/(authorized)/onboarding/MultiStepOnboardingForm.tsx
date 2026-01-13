@@ -33,15 +33,15 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
 import {
+  PATIENT_PROFILE_LIMITS,
+  patientProfileSchema,
+  SEX_AT_BIRTH_OPTIONS,
+} from "@/convex/validators/patients";
+import {
   getDateYearsAgo,
   getTodayDate,
   rangedNumberField,
 } from "@/lib/form.utils";
-import {
-  PATIENT_PROFILE_LIMITS,
-  patientProfileSchema,
-  SEX_AT_BIRTH_OPTIONS,
-} from "@/lib/validators/patientProfile";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
@@ -51,7 +51,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
-import type { FieldError as FieldErrorType } from "@/lib/validators/types";
+import type { TFieldError as FieldErrorType } from "@/convex/validators/types";
 
 const FIELD_RANGES = {
   age: PATIENT_PROFILE_LIMITS.age,
