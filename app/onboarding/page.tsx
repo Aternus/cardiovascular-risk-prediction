@@ -3,5 +3,9 @@
 import { MultiStepOnboardingForm } from "@/app/onboarding/MultiStepOnboardingForm";
 
 export default function Onboarding() {
-  return <MultiStepOnboardingForm />;
+  return (
+    <div className="p-10">
+      <MultiStepOnboardingForm />
+    </div>
+  );
 }
