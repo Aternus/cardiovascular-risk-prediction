@@ -31,6 +31,12 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import {
+  getAgeInYears,
+  getDateYearsAgo,
+  getTodayDate,
+  rangedNumberField,
+} from "@/lib/form.utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -38,34 +44,14 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
-const toNumber = (value: string | number | undefined) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed === "") {
-      return undefined;
-    }
-    const parsed = Number(trimmed);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  }
-
-  if (Number.isNaN(value)) {
-    return undefined;
-  }
-
-  return value;
-};
-
-const floatField = (label: string) =>
-  z.preprocess(
-    toNumber,
-    z.number({
-      error: `${label} is required`,
-    }),
-  );
+const FIELD_RANGES = {
+  age: { min: 30, max: 79 },
+  totalCholesterol: { min: 130, max: 320 },
+  hdlCholesterol: { min: 20, max: 100 },
+  systolicBp: { min: 90, max: 200 },
+  bmi: { min: 18.5, max: 39.9 },
+  egfr: { min: 15, max: 150 },
+} as const;
 
 const formSchema = z.object({
   firstName: z
@@ -92,12 +78,22 @@ const formSchema = z.object({
           ? "Date of Birth is required"
           : "Invalid date",
     })
-    .refine((val) => !Number.isNaN(val.getTime()), "Invalid date"),
-  totalCholesterol: floatField("Total cholesterol"),
-  hdlCholesterol: floatField("HDL cholesterol"),
-  systolicBp: floatField("Systolic BP"),
-  bmi: floatField("BMI"),
-  egfr: floatField("eGFR"),
+    .refine((val) => !Number.isNaN(val.getTime()), "Invalid date")
+    .refine((val) => {
+      const age = getAgeInYears(val);
+      return age >= FIELD_RANGES.age.min && age <= FIELD_RANGES.age.max;
+    }, `Age must be between ${FIELD_RANGES.age.min} and ${FIELD_RANGES.age.max}`),
+  totalCholesterol: rangedNumberField(
+    "Total cholesterol",
+    FIELD_RANGES.totalCholesterol,
+  ),
+  hdlCholesterol: rangedNumberField(
+    "HDL cholesterol",
+    FIELD_RANGES.hdlCholesterol,
+  ),
+  systolicBp: rangedNumberField("Systolic BP", FIELD_RANGES.systolicBp),
+  bmi: rangedNumberField("BMI", FIELD_RANGES.bmi),
+  egfr: rangedNumberField("eGFR", FIELD_RANGES.egfr),
   isDiabetes: z.boolean(),
   isSmoker: z.boolean(),
   isAntiHypertensiveMedication: z.boolean(),
@@ -138,6 +134,10 @@ const steps: Step[] = [
 
 export const MultiStepOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
+
+  const today = getTodayDate();
+  const minDateOfBirth = getDateYearsAgo(FIELD_RANGES.age.max, today);
+  const maxDateOfBirth = getDateYearsAgo(FIELD_RANGES.age.min, today);
 
   const currentForm = steps[currentStep];
 
@@ -293,9 +293,13 @@ export const MultiStepOnboardingForm = () => {
                     value={field.value}
                     onChange={field.onChange}
                     placeholder=""
+                    minDate={minDateOfBirth}
+                    maxDate={maxDateOfBirth}
                     disabled={false}
                   />
-                  <FieldDescription></FieldDescription>
+                  <FieldDescription>
+                    Age {FIELD_RANGES.age.min}–{FIELD_RANGES.age.max} years
+                  </FieldDescription>
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
@@ -326,6 +330,8 @@ export const MultiStepOnboardingForm = () => {
                     type="number"
                     inputMode="decimal"
                     step="any"
+                    min={FIELD_RANGES.totalCholesterol.min}
+                    max={FIELD_RANGES.totalCholesterol.max}
                     disabled={false}
                   />
                   <FieldDescription>130–320 mg/dL</FieldDescription>
@@ -353,6 +359,8 @@ export const MultiStepOnboardingForm = () => {
                     type="number"
                     inputMode="decimal"
                     step="any"
+                    min={FIELD_RANGES.hdlCholesterol.min}
+                    max={FIELD_RANGES.hdlCholesterol.max}
                     disabled={false}
                   />
                   <FieldDescription>20–100 mg/dL</FieldDescription>
@@ -378,6 +386,8 @@ export const MultiStepOnboardingForm = () => {
                     type="number"
                     inputMode="decimal"
                     step="any"
+                    min={FIELD_RANGES.systolicBp.min}
+                    max={FIELD_RANGES.systolicBp.max}
                     disabled={false}
                   />
                   <FieldDescription>90–200 mmHg</FieldDescription>
@@ -403,6 +413,8 @@ export const MultiStepOnboardingForm = () => {
                     type="number"
                     inputMode="decimal"
                     step="any"
+                    min={FIELD_RANGES.bmi.min}
+                    max={FIELD_RANGES.bmi.max}
                     disabled={false}
                   />
                   <FieldDescription>18.5–39.9 kg/m2</FieldDescription>
@@ -428,6 +440,8 @@ export const MultiStepOnboardingForm = () => {
                     type="number"
                     inputMode="decimal"
                     step="any"
+                    min={FIELD_RANGES.egfr.min}
+                    max={FIELD_RANGES.egfr.max}
                     disabled={false}
                   />
                   <FieldDescription>15–150 mL/min/1.73 m2</FieldDescription>

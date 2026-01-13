@@ -16,6 +16,8 @@ interface DatePickerProps {
   id?: string;
   placeholder?: string;
   disabled?: boolean;
+  minDate?: Date;
+  maxDate?: Date;
 }
 
 const DatePicker = ({
@@ -24,6 +26,8 @@ const DatePicker = ({
   id,
   placeholder,
   disabled,
+  minDate,
+  maxDate,
 }: DatePickerProps) => {
   const [open, setOpen] = React.useState(false);
 
@@ -45,6 +49,17 @@ const DatePicker = ({
           mode="single"
           selected={value}
           captionLayout="dropdown"
+          fromDate={minDate}
+          toDate={maxDate}
+          disabled={(date) => {
+            if (minDate && date < minDate) {
+              return true;
+            }
+            if (maxDate && date > maxDate) {
+              return true;
+            }
+            return false;
+          }}
           onSelect={(date) => {
             onChange?.(date);
             setOpen(false);
