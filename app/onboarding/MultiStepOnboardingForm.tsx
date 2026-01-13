@@ -84,10 +84,10 @@ const formSchema = z.object({
     .string()
     .min(1, "eGFR is required")
     .max(255, "eGFR must be at most 255 characters"),
-  diabetes: z.boolean(),
-  smoker: z.boolean(),
-  antiHypertensiveMedication: z.boolean(),
-  statins: z.boolean(),
+  isDiabetes: z.boolean(),
+  isSmoker: z.boolean(),
+  isAntiHypertensiveMedication: z.boolean(),
+  isStatins: z.boolean(),
 });
 
 type TFormSchema = z.infer<typeof formSchema>;
@@ -119,7 +119,12 @@ export const MultiStepOnboardingForm = () => {
     {
       title: "Clinical Status",
       description: "",
-      fields: ["diabetes", "smoker", "antiHypertensiveMedication", "statins"],
+      fields: [
+        "isDiabetes",
+        "isSmoker",
+        "isAntiHypertensiveMedication",
+        "isStatins",
+      ],
     },
   ];
 
@@ -142,10 +147,10 @@ export const MultiStepOnboardingForm = () => {
       systolicBp: "",
       bmi: "",
       egfr: "",
-      diabetes: false,
-      smoker: false,
-      antiHypertensiveMedication: false,
-      statins: false,
+      isDiabetes: false,
+      isSmoker: false,
+      isAntiHypertensiveMedication: false,
+      isStatins: false,
     },
     mode: "onChange",
   });
@@ -167,6 +172,8 @@ export const MultiStepOnboardingForm = () => {
   };
 
   const onSubmit = async (values: TFormSchema) => {
+    console.log({ values });
+
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast.success("Form successfully submitted");
@@ -415,7 +422,7 @@ export const MultiStepOnboardingForm = () => {
         return (
           <FieldGroup>
             <Controller
-              name="diabetes"
+              name="isDiabetes"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field
@@ -423,7 +430,7 @@ export const MultiStepOnboardingForm = () => {
                   orientation="horizontal"
                 >
                   <FieldContent>
-                    <FieldLabel htmlFor="diabetes">Diabetes</FieldLabel>
+                    <FieldLabel htmlFor="isDiabetes">Diabetes</FieldLabel>
                     <FieldDescription>
                       Are you currently diagnosed with diabetes?
                     </FieldDescription>
@@ -432,7 +439,7 @@ export const MultiStepOnboardingForm = () => {
                     )}
                   </FieldContent>
                   <Switch
-                    id="diabetes"
+                    id="isDiabetes"
                     name={field.name}
                     disabled={false}
                     checked={field.value}
@@ -443,7 +450,7 @@ export const MultiStepOnboardingForm = () => {
             />
 
             <Controller
-              name="smoker"
+              name="isSmoker"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field
@@ -451,7 +458,7 @@ export const MultiStepOnboardingForm = () => {
                   orientation="horizontal"
                 >
                   <FieldContent>
-                    <FieldLabel htmlFor="smoker">Smoker</FieldLabel>
+                    <FieldLabel htmlFor="isSmoker">Smoker</FieldLabel>
                     <FieldDescription>
                       Are you currently smoking?
                     </FieldDescription>
@@ -460,7 +467,7 @@ export const MultiStepOnboardingForm = () => {
                     )}
                   </FieldContent>
                   <Switch
-                    id="smoker"
+                    id="isSmoker"
                     name={field.name}
                     disabled={false}
                     checked={field.value}
@@ -471,7 +478,7 @@ export const MultiStepOnboardingForm = () => {
             />
 
             <Controller
-              name="antiHypertensiveMedication"
+              name="isAntiHypertensiveMedication"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field
@@ -479,7 +486,7 @@ export const MultiStepOnboardingForm = () => {
                   orientation="horizontal"
                 >
                   <FieldContent>
-                    <FieldLabel htmlFor="antiHypertensiveMedication">
+                    <FieldLabel htmlFor="isAntiHypertensiveMedication">
                       Anti-hypertensive medication
                     </FieldLabel>
                     <FieldDescription>
@@ -490,7 +497,7 @@ export const MultiStepOnboardingForm = () => {
                     )}
                   </FieldContent>
                   <Switch
-                    id="antiHypertensiveMedication"
+                    id="isAntiHypertensiveMedication"
                     name={field.name}
                     disabled={false}
                     checked={field.value}
@@ -501,7 +508,7 @@ export const MultiStepOnboardingForm = () => {
             />
 
             <Controller
-              name="statins"
+              name="isStatins"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field
@@ -509,14 +516,14 @@ export const MultiStepOnboardingForm = () => {
                   orientation="horizontal"
                 >
                   <FieldContent>
-                    <FieldLabel htmlFor="statins">Statins</FieldLabel>
+                    <FieldLabel htmlFor="isStatins">Statins</FieldLabel>
                     <FieldDescription>Are you using statins?</FieldDescription>
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
                   </FieldContent>
                   <Switch
-                    id="statins"
+                    id="isStatins"
                     name={field.name}
                     disabled={false}
                     checked={field.value}
@@ -550,7 +557,7 @@ export const MultiStepOnboardingForm = () => {
         <Progress value={progress} />
       </CardHeader>
       <CardContent>
-        <form id="multi-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <form id="multi-step-onboarding" onSubmit={form.handleSubmit(onSubmit)}>
           {renderCurrentStepContent()}
         </form>
       </CardContent>
@@ -574,7 +581,7 @@ export const MultiStepOnboardingForm = () => {
           {isLastStep && (
             <Button
               type="submit"
-              form="multi-form"
+              form="multi-step-onboarding"
               disabled={form.formState.isSubmitting}
               className="cursor-pointer"
             >
