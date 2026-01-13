@@ -22,7 +22,7 @@ export default function AuthorizedLayout({
               Cardiovascular Risk Prediction System
             </h1>
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              PREVENT 2023 Risk Assessment
+              PREVENT™ Risk Assessment
             </p>
           </div>
         </div>
