@@ -1,4 +1,4 @@
-# Cardiovascular Risk Prediction System - Design Review
+# Cardiovascular Risk Prediction System - High Level Design
 
 ## Terms
 
@@ -82,7 +82,7 @@ Website: https://u-prevent.com/
 ## Conclusions
 
 For the scope of this design, we will focus on patients in the US using the
-`PREVENT 2023` algorithm.
+`PREVENT 2023` algorithm (model).
 
 ### Algorithm
 
@@ -129,44 +129,73 @@ and HF and sort them in accordance with their probability.
 
 ---
 
+## Data
+
+1. Normalize Units to the units used in the US region:
+   - `mmol/L` -> `mg/dL`
+   - `cm` -> `in`
+   - `kg` -> `lbs`
+
+## Security & Privacy
+
+Since we are going to store patient info and show medical scores and
+recommendations:
+
+1. Legal: disclaimers about legal implications and responsibilities.
+2. Data storage: encrypt at rest; store only fields needed for the model.
+3. Logging policy: structured logs with request IDs; redact payloads; audit
+   access; DON'T LOG PHI.
+4. Secrets: env vars (secret manager in production).
+
+---
+
 ## MVP Scope
 
 1. Manage patient information
-   1. Web portal with AuthN (using a magic link)
+   1. Web portal with AuthN for patient access
    2. Web form to collect the information required by the PREVENT model
-   3. Web form with optional fields for future use
-   4. Allow the patient to edit the form
-      - Copy the values from the original submission into a new form, only save
-        when submitted
-2. Provide personalized results
-   1. Your risk of having a Cardiovascular (CV) Event with the next 10 years is
-      `totalCVD`
-   2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is
-      considered:
-      1. Low
-      2. Borderline
-      3. Intermediate
-      4. High
-   3. Break down of CV events ranked by probability:
-      1. CHD
-      2. Stroke
-      3. HF
-   4. Contribution of each Risk Factor:
-      - Each factor affecting 10-year ASCVD risk can be measured on its own,
-        whether it is protective (reducing risk) or harmful (increasing risk).
-      1. Age
-      2. Total Cholesterol
-      3. Systolic BP
-      4. HDL
-      5. eGFR
+   3. Save the form information and allow the patient to edit the form
 
-   5. Actionable suggestions (rule-based)
+2. Provide personalized results
+   1. Use the PREVENT model and target the US region.
+   2. Risk Assessment Page:
+      1. Your risk of having a Cardiovascular (CV) Event with the next 10 years
+         is `totalCVD`
+      2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is
+         considered:
+         1. Low
+         2. Borderline
+         3. Intermediate
+         4. High
+      3. Break down of CV events ranked by probability:
+         1. CHD
+         2. Stroke
+         3. HF
+      4. Contribution of each Risk Factor:
+         - Each factor affecting 10-year ASCVD risk can be measured on its own,
+           whether it is protective (reducing risk) or harmful (increasing
+           risk).
+         - Examples:
+           - Age
+           - Total Cholesterol
+           - Systolic BP
+           - HDL
+           - eGFR
 
 ## MVP Out of Scope
 
-1. Provide personalized results
-   1. Long-term: route to the correct model(s) by region of the patient.
-      - For the MVP: US-> PREVENT model.
+I've decided to take these things out of scope to remain within a reasonable
+timeline for a home assignment.
+
+Some items include explanations about specific reasons for exclusion.
+
+1. Manage patient information
+   1. Web form with optional fields for future use
+   2. Clinic Workspace: the ability to manage multiple patients by a user
+      (clinician).
+
+2. Provide personalized results
+   1. Route to the correct model(s) by region of the patient.
    2. Sudden Cardiac Death, PAD, Aortic Disease risks.
       - The PREVENT model doesn't support it.
       - In the future: perhaps use additional models to get the data or train
@@ -177,16 +206,15 @@ and HF and sort them in accordance with their probability.
       - Stick to clinically validated CVD risk interpretation by AHA.
       - In the future: perhaps give weights to the events (e.g. HF=1.0,
         Stroke=1.0, CHD=0.9), this needs more research.
-2. Security
+   4. Actionable suggestions (rule-based)
+
+3. Security
    1. Encryption at rest
+      - Although supported by Convex Auth, it wasn't tested.
    2. Legal disclaimers
+      - Requires a legal professional.
 
-## Data Model
-
-1. Normalize Units to a US region:
-   - `mmol/L` -> `mg/dL`
-   - `cm` -> `in`
-   - `kg` -> `lbs`
+---
 
 ## Use Case: Healthy 36 years old
 
@@ -254,25 +282,13 @@ Output:
 ]
 ```
 
-## Security & Privacy
-
-Since we are going to store patient info and show medical scores and
-recommendations:
-
-1. Legal: disclaimers about legal implications and responsibilities
-2. Data storage: encrypt at rest; store only fields needed for the model
-3. Logging policy: structured logs with request IDs; redact payloads; audit
-   access; DON'T LOG PHI.
-4. Secrets: env vars (secret manager in production)
-
 ---
 
-## Next Steps
+## Next Steps: Beyond the MVP
 
 ### Risk Prediction Models
 
-In order to support other regions, we ought to add new models for risk
-assessment.
+To support other regions, we ought to add new models for risk assessment.
 
 ### Security & Privacy
 
@@ -281,7 +297,7 @@ Splitting the data by regulatory regions: Europe + UK (GDPR), US California
 
 ### Additional Inputs
 
-The next step for such a system could be incorporation of a Machine Learning
+The next step for such a system could be the incorporation of a Machine Learning
 model trained on a data set of patients.
 
 I suggest we collect data we consider valuable as soon as possible for future
@@ -299,5 +315,9 @@ Fields:
    - Shortness of breath at rest
    - Fainting/near-fainting
    - New neurologic symptoms (speech trouble/one-sided weakness)
-   - Palpitations (optional, for arrhythmia risk)
+   - Palpitations (for arrhythmia risk)
 4. Activity level (physical)
+
+### Clinic Workspace
+
+A workspace for clinicians to monitor multiple patients.
