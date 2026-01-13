@@ -381,7 +381,9 @@ export default function RiskAssessment() {
 
   const absoluteRiskDisplay = formatPercent(totalRiskPercent);
   const riskProgressValue =
-    totalRiskPercent === null ? 0 : Math.min(100, totalRiskPercent);
+    totalRiskPercent === null
+      ? 0
+      : Math.min(100, Math.max(0, (totalRiskPercent / 40) * 100));
 
   const interpretation: TRiskCategory =
     totalRiskPercent === null
@@ -409,10 +411,19 @@ export default function RiskAssessment() {
 
   const interpretationBadgeVariant =
     interpretation === "Unknown" ? "outline" : "default";
+  const interpretationBadgeStyles: Record<
+    Exclude<TRiskCategory, "Unknown">,
+    string
+  > = {
+    Low: "bg-emerald-500 text-white hover:bg-emerald-500",
+    Borderline: "bg-amber-200 text-amber-900 hover:bg-amber-200",
+    Intermediate: "bg-amber-500 text-white hover:bg-amber-500",
+    High: "bg-red-500 text-white hover:bg-red-500",
+  };
   const interpretationBadgeClassName =
     interpretation === "Unknown"
       ? "w-fit border-muted-foreground/30 text-muted-foreground"
-      : "w-fit bg-amber-500 text-white hover:bg-amber-500";
+      : `w-fit ${interpretationBadgeStyles[interpretation]}`;
 
   const showAbsoluteRiskLoading =
     isQueryLoading ||
@@ -540,7 +551,9 @@ export default function RiskAssessment() {
                   }
                   className={
                     level.label === interpretation
-                      ? "bg-amber-500 text-white hover:bg-amber-500"
+                      ? interpretationBadgeStyles[
+                          level.label as Exclude<TRiskCategory, "Unknown">
+                        ]
                       : "text-muted-foreground"
                   }
                 >
