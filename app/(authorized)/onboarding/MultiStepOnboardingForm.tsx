@@ -31,21 +31,30 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import { api } from "@/convex/_generated/api";
 import {
-  getAgeInYears,
   getDateYearsAgo,
   getTodayDate,
   rangedNumberField,
 } from "@/lib/form.utils";
+import {
+  PATIENT_PROFILE_LIMITS,
+  patientProfileSchema,
+  SEX_AT_BIRTH_OPTIONS,
+} from "@/lib/validators/patientProfile";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import type { FieldError as FieldErrorType } from "@/lib/validators/types";
+
 const FIELD_RANGES = {
-  age: { min: 30, max: 79 },
+  age: PATIENT_PROFILE_LIMITS.age,
   totalCholesterol: { min: 130, max: 320 },
   hdlCholesterol: { min: 20, max: 100 },
   systolicBp: { min: 90, max: 200 },
@@ -53,36 +62,50 @@ const FIELD_RANGES = {
   egfr: { min: 15, max: 150 },
 } as const;
 
-const formSchema = z.object({
-  firstName: z
-    .string()
-    .min(1, "First Name is required")
-    .min(2, "First Name must be at least 2 characters")
-    .max(255, "First Name must be at most 255 characters"),
-  lastName: z
-    .string()
-    .min(1, "Last Name is required")
-    .min(2, "Last Name must be at least 2 characters")
-    .max(255, "Last Name must be at most 255 characters"),
-  gender: z
-    .string()
-    .min(1, "Gender is required")
-    .refine(
-      (val) => ["male", "female"].includes(val),
-      "Gender must be a valid option",
-    ),
-  dateOfBirth: z
-    .date({
-      error: (issue) =>
-        issue.input === undefined
-          ? "Date of Birth is required"
-          : "Invalid date",
-    })
-    .refine((val) => !Number.isNaN(val.getTime()), "Invalid date")
-    .refine((val) => {
-      const age = getAgeInYears(val);
-      return age >= FIELD_RANGES.age.min && age <= FIELD_RANGES.age.max;
-    }, `Age must be between ${FIELD_RANGES.age.min} and ${FIELD_RANGES.age.max}`),
+const formatDateToYmd = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateFromYmd = (value: string) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parts = value.split("-");
+  if (parts.length !== 3) {
+    return undefined;
+  }
+
+  const [year, month, day] = parts.map(Number);
+  if (!year || !month || !day) {
+    return undefined;
+  }
+
+  return new Date(year, month - 1, day);
+};
+
+const getFieldErrors = (error: unknown): FieldErrorType[] => {
+  if (!(error instanceof ConvexError)) {
+    return [];
+  }
+
+  const data = error.data;
+  if (!data || typeof data !== "object") {
+    return [];
+  }
+
+  const errorData = data as { fieldErrors?: unknown };
+  if (Array.isArray(errorData.fieldErrors)) {
+    return errorData.fieldErrors as FieldErrorType[];
+  }
+
+  return [];
+};
+
+const formSchema = patientProfileSchema.extend({
   totalCholesterol: rangedNumberField(
     "Total cholesterol",
     FIELD_RANGES.totalCholesterol,
@@ -113,7 +136,7 @@ const steps: Step[] = [
   {
     title: "Patient Profile",
     description: "",
-    fields: ["firstName", "lastName", "gender", "dateOfBirth"],
+    fields: ["firstName", "lastName", "sexAtBirth", "dateOfBirth"],
   },
   {
     title: "Measurements",
@@ -134,6 +157,8 @@ const steps: Step[] = [
 
 export const MultiStepOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const upsertProfile = useMutation(api.patients.upsertProfile);
+  const upsertIntake = useMutation(api.intake.upsertIntake);
 
   const today = getTodayDate();
   const minDateOfBirth = getDateYearsAgo(FIELD_RANGES.age.max, today);
@@ -149,8 +174,8 @@ export const MultiStepOnboardingForm = () => {
     defaultValues: {
       firstName: "",
       lastName: "",
-      gender: "",
-      dateOfBirth: undefined,
+      sexAtBirth: "",
+      dateOfBirth: "",
       totalCholesterol: "",
       hdlCholesterol: "",
       systolicBp: "",
@@ -182,11 +207,69 @@ export const MultiStepOnboardingForm = () => {
   };
 
   const onSubmit = async (values: TFormSchema) => {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    form.clearErrors();
 
-    toast.success("Form successfully submitted");
+    try {
+      await upsertProfile({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        sexAtBirth: values.sexAtBirth,
+        dateOfBirth: values.dateOfBirth,
+      });
 
-    console.log(values);
+      await upsertIntake({
+        totalCholesterol: values.totalCholesterol,
+        hdlCholesterol: values.hdlCholesterol,
+        systolicBP: values.systolicBp,
+        bmi: values.bmi,
+        eGFR: values.egfr,
+        isDiabetes: values.isDiabetes,
+        isSmoker: values.isSmoker,
+        isTakingAntihypertensive: values.isAntiHypertensiveMedication,
+        isTakingStatin: values.isStatins,
+      });
+
+      toast.success("Patient information saved");
+    } catch (error) {
+      const fieldErrors = getFieldErrors(error);
+      if (fieldErrors.length > 0) {
+        const fieldMap: Record<string, keyof TFormInput> = {
+          firstName: "firstName",
+          lastName: "lastName",
+          sexAtBirth: "sexAtBirth",
+          dateOfBirth: "dateOfBirth",
+          totalCholesterol: "totalCholesterol",
+          hdlCholesterol: "hdlCholesterol",
+          systolicBP: "systolicBp",
+          bmi: "bmi",
+          eGFR: "egfr",
+          isDiabetes: "isDiabetes",
+          isSmoker: "isSmoker",
+          isTakingAntihypertensive: "isAntiHypertensiveMedication",
+          isTakingStatin: "isStatins",
+        };
+
+        for (const fieldError of fieldErrors) {
+          const fieldName = fieldMap[fieldError.field];
+          if (fieldName) {
+            form.setError(fieldName, {
+              type: "server",
+              message: fieldError.message,
+            });
+          }
+        }
+
+        toast.error("Please review the highlighted fields.");
+        return;
+      }
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save patient information";
+
+      toast.error(message);
+    }
   };
 
   const renderCurrentStepContent = () => {
@@ -239,47 +322,40 @@ export const MultiStepOnboardingForm = () => {
             />
 
             <Controller
-              name="gender"
+              name="sexAtBirth"
               control={form.control}
-              render={({ field, fieldState }) => {
-                const options = [
-                  { label: "Male", value: "male" },
-                  { label: "Female", value: "female" },
-                ];
-
-                return (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="gender">Gender</FieldLabel>
-                    <Select
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={false}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="sexAtBirth">Sex at birth</FieldLabel>
+                  <Select
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={false}
+                  >
+                    <SelectTrigger
+                      id="sexAtBirth"
+                      aria-invalid={fieldState.invalid}
                     >
-                      <SelectTrigger
-                        id="gender"
-                        aria-invalid={fieldState.invalid}
-                      >
-                        <SelectValue placeholder="" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Select an option</SelectLabel>
-                          {options.map((item) => (
-                            <SelectItem key={item.value} value={item.value}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FieldDescription></FieldDescription>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                );
-              }}
+                      <SelectValue placeholder="" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Select an option</SelectLabel>
+                        {SEX_AT_BIRTH_OPTIONS.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription></FieldDescription>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
             />
 
             <Controller
@@ -290,8 +366,10 @@ export const MultiStepOnboardingForm = () => {
                   <FieldLabel htmlFor="dateOfBirth">Date of Birth</FieldLabel>
                   <DatePicker
                     id="dateOfBirth"
-                    value={field.value}
-                    onChange={field.onChange}
+                    value={parseDateFromYmd(field.value)}
+                    onChange={(date) => {
+                      field.onChange(date ? formatDateToYmd(date) : "");
+                    }}
                     placeholder=""
                     minDate={minDateOfBirth}
                     maxDate={maxDateOfBirth}
