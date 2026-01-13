@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeToggleButton } from "@/components/ThemeToggleButton";
 import { api } from "@/convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -34,7 +35,10 @@ export default function Home() {
             Convex + Next.js + Convex Auth
           </h1>
         </div>
-        <SignOutButton />
+        <div className="flex gap-2">
+          <ThemeToggleButton />
+          <SignOutButton />
+        </div>
       </header>
       <main className="p-8 flex flex-col gap-8">
         <Content />
