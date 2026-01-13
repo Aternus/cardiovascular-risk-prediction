@@ -48,6 +48,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -131,6 +132,7 @@ const steps: TStep[] = [
 export const MultiStepOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const hasHydratedRef = useRef(false);
+  const router = useRouter();
 
   const upsertProfile = useMutation(api.patients.upsertProfile);
   const upsertIntake = useMutation(api.intake.upsertIntake);
@@ -250,6 +252,7 @@ export const MultiStepOnboardingForm = () => {
       });
 
       toast.success("Patient information saved");
+      router.push("/risk-assessment");
     } catch (error) {
       const fieldErrors = getFieldErrors(error);
       if (fieldErrors.length > 0) {
