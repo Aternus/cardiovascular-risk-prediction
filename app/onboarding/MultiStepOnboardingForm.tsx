@@ -90,10 +90,16 @@ const formSchema = z.object({
   statins: z.boolean(),
 });
 
-type FormSchema = z.infer<typeof formSchema>;
+type TFormSchema = z.infer<typeof formSchema>;
 
 export const MultiStepOnboardingForm = () => {
-  const steps = [
+  type Step = {
+    title: string;
+    description: string;
+    fields: Array<keyof TFormSchema>;
+  };
+
+  const steps: Step[] = [
     {
       title: "Patient Profile",
       description: "",
@@ -124,7 +130,7 @@ export const MultiStepOnboardingForm = () => {
   const isLastStep = currentStep === steps.length - 1;
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const form = useForm<FormSchema>({
+  const form = useForm<TFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       firstName: "",
@@ -160,7 +166,7 @@ export const MultiStepOnboardingForm = () => {
     }
   };
 
-  const onSubmit = async (values: FormSchema) => {
+  const onSubmit = async (values: TFormSchema) => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast.success("Form successfully submitted");
@@ -240,17 +246,17 @@ export const MultiStepOnboardingForm = () => {
                         aria-invalid={fieldState.invalid}
                       >
                         <SelectValue placeholder="" />
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Select an option</SelectLabel>
-                            {options.map((item) => (
-                              <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
                       </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Select an option</SelectLabel>
+                          {options.map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
                     </Select>
                     <FieldDescription></FieldDescription>
                     {fieldState.invalid && (
@@ -271,7 +277,6 @@ export const MultiStepOnboardingForm = () => {
                     id="dateOfBirth"
                     value={field.value}
                     onChange={field.onChange}
-                    aria-invalid={fieldState.invalid}
                     placeholder=""
                     disabled={false}
                   />
