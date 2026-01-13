@@ -16,15 +16,15 @@ import type { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
 
 const Form = FormProvider;
 
-type FormFieldContextValue<
+type TFormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > = {
   name: TName;
 };
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue,
+const FormFieldContext = React.createContext<TFormFieldContextValue>(
+  {} as TFormFieldContextValue,
 );
 
 const FormField = <
@@ -63,12 +63,12 @@ const useFormField = () => {
   };
 };
 
-type FormItemContextValue = {
+type TFormItemContextValue = {
   id: string;
 };
 
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue,
+const FormItemContext = React.createContext<TFormItemContextValue>(
+  {} as TFormItemContextValue,
 );
 
 function FormItem({ className, ...props }: React.ComponentProps<"div">) {

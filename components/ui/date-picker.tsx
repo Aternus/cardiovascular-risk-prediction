@@ -10,7 +10,7 @@ import {
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
 
-interface DatePickerProps {
+interface TDatePickerProps {
   value?: Date;
   onChange?: (date: Date | undefined) => void;
   id?: string;
@@ -28,7 +28,7 @@ const DatePicker = ({
   disabled,
   minDate,
   maxDate,
-}: DatePickerProps) => {
+}: TDatePickerProps) => {
   const [open, setOpen] = React.useState(false);
 
   return (

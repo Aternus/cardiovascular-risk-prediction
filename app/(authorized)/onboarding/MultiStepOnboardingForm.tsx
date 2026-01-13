@@ -126,13 +126,13 @@ const formSchema = patientProfileSchema.extend({
 type TFormSchema = z.output<typeof formSchema>;
 type TFormInput = z.input<typeof formSchema>;
 
-type Step = {
+type TStep = {
   title: string;
   description: string;
   fields: Array<keyof TFormInput>;
 };
 
-const steps: Step[] = [
+const steps: TStep[] = [
   {
     title: "Patient Profile",
     description: "",
