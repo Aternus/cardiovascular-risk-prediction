@@ -59,4 +59,8 @@
 - Store local environment overrides in `.env.local` and keep secrets out of git.
 - Convex environment configuration lives in the Convex dashboard; keep
   `convex/auth.config.ts` aligned with provider settings.
-- Additional Convex guidance is documented in `.cursor/rules/convex_rules.mdc`.
+
+## LLM Guidelines
+
+- API guidance is documented in `.cursor/rules/api_rules.md`.
+- Convex guidance is documented in `.cursor/rules/convex_rules.mdc`.
