@@ -1,149 +1,106 @@
-"use client";
-
-import { ResourceCard } from "@/components/ResourceCard";
-import { api } from "@/convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, ClipboardList, HeartPulse } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
-  const { viewer, numbers } =
-    useQuery(api.numbers.listNumbers, {
-      count: 10,
-    }) ?? {};
-  const addNumber = useMutation(api.numbers.addNumber);
-
-  if (viewer === undefined || numbers === undefined) {
-    return (
-      <div className="mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-          <div
-            className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"
-            style={{ animationDelay: "0.1s" }}
-          ></div>
-          <div
-            className="w-2 h-2 bg-slate-600 rounded-full animate-bounce"
-            style={{ animationDelay: "0.2s" }}
-          ></div>
-          <p className="ml-2 text-slate-600 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-4 max-w-lg mx-auto">
-      <div>
-        <h2 className="font-bold text-xl text-slate-800 dark:text-slate-200">
-          Welcome {viewer ?? "Anonymous"}!
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">
-          You are signed into a demo application using Convex Auth.
-        </p>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">
-          This app can generate random numbers and store them in your Convex
-          database.
-        </p>
-      </div>
-
-      <div className="h-px bg-slate-200 dark:bg-slate-700"></div>
-
-      <div className="flex flex-col gap-4">
-        <h2 className="font-semibold text-xl text-slate-800 dark:text-slate-200">
-          Number generator
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Click the button below to generate a new number. The data is persisted
-          in the Convex cloud database - open this page in another window and
-          see the data sync automatically!
-        </p>
-        <button
-          className="bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-sm font-medium px-6 py-3 rounded-lg cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-          onClick={() => {
-            void addNumber({ value: Math.floor(Math.random() * 10) });
-          }}
-        >
-          + Generate random number
-        </button>
-        <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl p-4 shadow-sm">
-          <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
-            Newest Numbers
-          </p>
-          <p className="text-slate-700 dark:text-slate-300 font-mono text-lg">
-            {numbers?.length === 0
-              ? "Click the button to generate a number!"
-              : (numbers?.join(", ") ?? "...")}
-          </p>
-        </div>
-      </div>
-
-      <div className="h-px bg-slate-200 dark:bg-slate-700"></div>
-
-      <div className="flex flex-col gap-4">
-        <h2 className="font-semibold text-xl text-slate-800 dark:text-slate-200">
-          Making changes
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Edit{" "}
-          <code className="text-sm font-semibold font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600">
-            convex/numbers.ts
-          </code>{" "}
-          to change the backend.
-        </p>
-        <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Edit{" "}
-          <code className="text-sm font-semibold font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md border border-slate-300 dark:border-slate-600">
-            app/(authorized)/page.tsx
-          </code>{" "}
-          to change the frontend.
-        </p>
-        <p className="text-slate-600 dark:text-slate-400 text-sm">
-          See the{" "}
-          <Link
-            href="/server"
-            className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 font-medium underline decoration-2 underline-offset-2 transition-colors"
-          >
-            /server route
-          </Link>{" "}
-          for an example of loading data in a server component
-        </p>
-      </div>
-
-      <div className="h-px bg-slate-200 dark:bg-slate-700"></div>
-
-      <div className="flex flex-col gap-4">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-          Useful resources
-        </h2>
-        <div className="flex gap-4">
-          <div className="flex flex-col gap-4 w-1/2">
-            <ResourceCard
-              title="Convex docs"
-              description="Read comprehensive documentation for all Convex features."
-              href="https://docs.convex.dev/home"
-            />
-            <ResourceCard
-              title="Stack articles"
-              description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
-              href="https://stack.convex.dev"
-            />
+    <div className="mx-auto w-full max-w-5xl">
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-xl backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/70 sm:p-10">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 right-10 h-56 w-56 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-900/40"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 left-6 h-64 w-64 rounded-full bg-emerald-200/60 blur-3xl dark:bg-emerald-900/30"
+        />
+        <div className="relative z-10 flex flex-col gap-10">
+          <div className="flex flex-col gap-3">
+            <Badge
+              variant="secondary"
+              className="w-fit border border-slate-200/80 bg-white/70 text-slate-600 dark:border-slate-700/60 dark:bg-slate-900/70 dark:text-slate-300"
+            >
+              Care workflow
+            </Badge>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 sm:text-3xl">
+              Start your cardiovascular risk assessment
+            </h2>
           </div>
-          <div className="flex flex-col gap-4 w-1/2">
-            <ResourceCard
-              title="Templates"
-              description="Browse our collection of templates to get started quickly."
-              href="https://www.convex.dev/templates"
-            />
-            <ResourceCard
-              title="Discord"
-              description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
-              href="https://www.convex.dev/community"
-            />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Link
+              href="/onboarding"
+              className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800/80 dark:bg-slate-950/70"
+            >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-12 -top-10 h-24 w-24 rounded-full bg-emerald-200/60 blur-2xl dark:bg-emerald-900/40"
+              />
+              <div className="relative z-10 flex h-full flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-200/70 bg-emerald-50 text-emerald-700 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/60 dark:text-emerald-200">
+                    <ClipboardList className="h-6 w-6" />
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600/80 dark:text-emerald-300/80">
+                    Step 1
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                    Onboarding
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    Capture demographics, vitals, lab values, and clinical
+                    history.
+                  </p>
+                </div>
+                <div className="mt-auto flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-200">
+                  Begin intake
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/risk-assessment"
+              className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800/80 dark:bg-slate-950/70"
+            >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -left-12 -bottom-10 h-24 w-24 rounded-full bg-sky-200/60 blur-2xl dark:bg-sky-900/40"
+              />
+              <div className="relative z-10 flex h-full flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-sky-200/70 bg-sky-50 text-sky-700 shadow-sm dark:border-sky-800/60 dark:bg-sky-950/60 dark:text-sky-200">
+                    <HeartPulse className="h-6 w-6" />
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600/80 dark:text-sky-300/80">
+                    Step 2
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                    Risk assessment
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    Review 10-year risk, factor contributions, and care-ready
+                    insights.
+                  </p>
+                </div>
+                <div className="mt-auto flex items-center gap-2 text-sm font-medium text-sky-700 dark:text-sky-200">
+                  View dashboard
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/70 bg-white/60 p-5 text-sm text-slate-600 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/50 dark:text-slate-300">
+            Tip: Complete onboarding first so the risk assessment can calculate
+            accurate PREVENT scores and factor insights.
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
