@@ -22,13 +22,15 @@
 
 ### PREVENT 2023: Fields and Valid Values
 
-Note: the calculator should clamp values outside the stated ranges to the
-nearest valid value; risk estimates may be less accurate.
+Note: range enforcement happens in the UI first (with visual feedback) and is
+re-checked on the backend. The backend returns a list of field errors, and the
+UI and backend should share the same validator schema.
 
 Required fields:
 
 - age (integer, years)
   - valid range: 30–79
+  - derived from `dateOfBirth` in UTC at assessment time
 - gender (string)
   - allowed values: "male", "female"
 - totalCholesterol (float, mg/dL)
@@ -45,6 +47,10 @@ Required fields:
 - smoker (boolean)
 - takingAntihypertensive (boolean)
 - takingStatin (boolean)
+
+Internal naming note: boolean clinical event fields use the `is` prefix in our
+DTOs (e.g., `isDiabetes`). External integrations (MdCalc/ClinCalc) have their
+own field names and are mapped in the integration layer.
 
 Example:
 
@@ -97,6 +103,9 @@ Fields:
 - sexAtBirth ("FEMALE" | "MALE")
 - dateOfBirth (YYYY-MM-DD string)
 
+Note: `sexAtBirth` is the value collected from the user and is mapped to the
+external calculators' sex/gender input fields.
+
 Indexes:
 
 - by_userId (unique)
@@ -114,13 +123,14 @@ Fields:
   "EGFR")
 - value (number)
 - unit (string; store submitted unit, normalize at compute time)
-- measuredAt (unix ms)
 - source ("PATIENT" | "IMPORT")
 
 Indexes:
 
-- by_patientId_measuredAt
-- by_patientId_kind_measuredAt
+- by_patientId
+- by_patientId_kind
+
+Note: use `_creationTime` as the measurement timestamp for ordering and recency.
 
 ### Table: `patientClinicalEvents`
 
@@ -133,13 +143,14 @@ Fields:
 - patientId (ref `patients`)
 - kind ("DIABETES" | "SMOKING_STATUS" | "ON_ANTIHYPERTENSIVE" | "ON_STATIN")
 - value (boolean)
-- recordedAt (unix ms)
 - source ("PATIENT" | "IMPORT")
+
+Note: use `_creationTime` as the event timestamp for ordering and recency.
 
 Indexes:
 
-- by_patientId_recordedAt
-- by_patientId_kind_recordedAt
+- by_patientId
+- by_patientId_kind
 
 ### Table: `riskAssessments`
 
@@ -225,6 +236,8 @@ Expected response (MdCalcPREVENTAssessmentResponseDTO):
   ]
 }
 ```
+
+Note: we only use the 10-year outputs from MdCalc. Any 30-year data is ignored.
 
 ### Calculate Risk using ClinCalc API
 
@@ -313,6 +326,9 @@ Implementation notes:
   (the best DX).
 - **REST layer**: expose a versioned REST API (`/api/v1/...`) using Next.js
   Route Handlers for MdCalc / ClinCalc calls.
+- ClinCalc is required for the risk assessment. If the ClinCalc request fails,
+  the entire risk assessment creation fails (intake/profile data remains
+  persisted).
 
 Below is the REST surface (versioned) plus the DTOs. All endpoints are scoped to
 **the current user** (patient); the server resolves `patientId` from the auth
@@ -394,7 +410,7 @@ export type PatientIntakeDTO = {
   isTakingStatin: boolean;
 } & AuditDTO;
 
-export type PatientIntakeUpsertDTO = Exclude<PatientIntakeDTO, AuditDTO>;
+export type PatientIntakeUpsertDTO = Omit<PatientIntakeDTO, AuditDTO>;
 ```
 
 `GET /api/v1/me/intake`
@@ -416,7 +432,8 @@ export type UpsertIntakeResponseDTO = { intake: PatientIntakeDTO };
 #### Risk Assessments (Current User)
 
 A risk assessment is computed from a **snapshot** (latest measurement per kind +
-latest clinical flag per kind + computed age).
+latest clinical state per kind + computed age from `dateOfBirth` in UTC at
+assessment creation).
 
 ⚠️ WE ALWAYS CREATE A NEW Assessment. WE DO NOT SUPPORT UPDATES OR DELETES.
 
