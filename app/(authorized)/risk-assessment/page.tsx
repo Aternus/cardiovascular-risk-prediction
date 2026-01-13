@@ -59,6 +59,13 @@ import type {
   TmdCalcCalculateRiskAssessmentResponseDTO,
 } from "@/contracts/v1/mdcalc";
 
+type TAssessmentInputs = {
+  age: number | null;
+  validationError: string | null;
+  mdCalcPayload: TmdCalcCalculateRiskAssessmentRequestDTO | null;
+  clinCalcPayload: TClinCalcCalculateRiskAssessmentRequestDTO | null;
+};
+
 export default function RiskAssessment() {
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
@@ -81,52 +88,39 @@ export default function RiskAssessment() {
 
   const updatedLabel = useMemo(() => formatUpdatedLabel(new Date()), []);
 
-  const birthDate = useMemo(() => {
-    if (!profileData) {
-      return null;
-    }
+  const assessmentInputs = useMemo<TAssessmentInputs>(() => {
+    const emptyInputs: TAssessmentInputs = {
+      age: null,
+      validationError: null,
+      mdCalcPayload: null,
+      clinCalcPayload: null,
+    };
 
-    return parseDateFromYMD(profileData.dateOfBirth) ?? null;
-  }, [profileData]);
-  const age = useMemo(() => {
-    if (!birthDate) {
-      return null;
-    }
-
-    return getAgeInYears(birthDate);
-  }, [birthDate]);
-
-  const validationError = useMemo(() => {
     if (profileData === undefined || intakeData === undefined) {
-      return null;
+      return emptyInputs;
     }
 
     if (!profileData || !intakeData) {
-      return null;
+      return emptyInputs;
     }
 
+    const birthDate = parseDateFromYMD(profileData.dateOfBirth);
     if (!birthDate) {
-      return "Date of birth is invalid.";
+      return { ...emptyInputs, validationError: "Date of birth is invalid." };
     }
 
-    if (typeof age !== "number" || !Number.isFinite(age) || age <= 0) {
-      return "Age could not be calculated from the profile.";
-    }
-
-    return null;
-  }, [profileData, intakeData, birthDate, age]);
-
-  const mdCalcPayload =
-    useMemo<TmdCalcCalculateRiskAssessmentRequestDTO | null>(() => {
-      if (!profileData || !intakeData || typeof age !== "number") {
-        return null;
-      }
-
-      if (validationError) {
-        return null;
-      }
-
+    const age = getAgeInYears(birthDate);
+    if (!Number.isFinite(age) || age <= 0) {
       return {
+        ...emptyInputs,
+        validationError: "Age could not be calculated from the profile.",
+      };
+    }
+
+    return {
+      age,
+      validationError: null,
+      mdCalcPayload: {
         body: {
           UOMSYSTEM: true,
           model: 0,
@@ -142,20 +136,8 @@ export default function RiskAssessment() {
           statin: intakeData.isTakingStatin ? 1 : 0,
           bmi: intakeData.bmi,
         },
-      };
-    }, [profileData, intakeData, age, validationError]);
-
-  const clinCalcPayload =
-    useMemo<TClinCalcCalculateRiskAssessmentRequestDTO | null>(() => {
-      if (!profileData || !intakeData || typeof age !== "number") {
-        return null;
-      }
-
-      if (validationError) {
-        return null;
-      }
-
-      return {
+      },
+      clinCalcPayload: {
         body: {
           age,
           gender: profileData.sexAtBirth === "MALE" ? "male" : "female",
@@ -169,11 +151,18 @@ export default function RiskAssessment() {
           takingAntihypertensive: intakeData.isTakingAntihypertensive,
           takingStatin: intakeData.isTakingStatin,
         },
-      };
-    }, [profileData, intakeData, age, validationError]);
+      },
+    };
+  }, [profileData, intakeData]);
+
+  const { age, validationError, mdCalcPayload, clinCalcPayload } =
+    assessmentInputs;
+  const hasMdCalcPayload = mdCalcPayload !== null;
+  const hasClinCalcPayload = clinCalcPayload !== null;
+  const hasAssessmentInputs = hasMdCalcPayload && hasClinCalcPayload;
 
   useEffect(() => {
-    if (!mdCalcPayload || !clinCalcPayload) {
+    if (!hasAssessmentInputs) {
       return;
     }
 
@@ -257,7 +246,7 @@ export default function RiskAssessment() {
       isCurrent = false;
       controller.abort();
     };
-  }, [mdCalcPayload, clinCalcPayload]);
+  }, [mdCalcPayload, clinCalcPayload, hasAssessmentInputs]);
 
   useEffect(() => {
     if (!isQueryResolved) {
@@ -272,7 +261,7 @@ export default function RiskAssessment() {
       return;
     }
 
-    if (assessmentStatus === "idle" && mdCalcPayload && clinCalcPayload) {
+    if (assessmentStatus === "idle" && hasAssessmentInputs) {
       return;
     }
 
@@ -306,14 +295,17 @@ export default function RiskAssessment() {
     clinCalcContributions,
     mdCalcPayload,
     mdCalcAssessments,
+    hasAssessmentInputs,
     recordRiskAssessment,
   ]);
 
   const displayMdCalcAssessments =
-    mdCalcPayload && assessmentStatus !== "loading" ? mdCalcAssessments : null;
+    hasMdCalcPayload && assessmentStatus !== "loading"
+      ? mdCalcAssessments
+      : null;
 
   const displayClinCalcContributions =
-    clinCalcPayload && assessmentStatus !== "loading"
+    hasClinCalcPayload && assessmentStatus !== "loading"
       ? clinCalcContributions
       : null;
 
@@ -487,15 +479,15 @@ export default function RiskAssessment() {
   const showAbsoluteRiskLoading =
     isQueryLoading ||
     isAssessmentLoading ||
-    (assessmentStatus === "idle" && mdCalcPayload !== null);
+    (assessmentStatus === "idle" && hasMdCalcPayload);
   const showEventBreakdownLoading =
     isQueryLoading ||
     isAssessmentLoading ||
-    (assessmentStatus === "idle" && mdCalcPayload !== null);
+    (assessmentStatus === "idle" && hasMdCalcPayload);
   const showRiskFactorLoading =
     isQueryLoading ||
     isAssessmentLoading ||
-    (assessmentStatus === "idle" && clinCalcPayload !== null);
+    (assessmentStatus === "idle" && hasClinCalcPayload);
 
   const riskFactorEmptyMessage = isMissingData
     ? "Complete your intake to see risk factor contributions."
