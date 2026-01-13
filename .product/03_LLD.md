@@ -5,7 +5,6 @@
 1. Backend: Convex
    - Multi-model DB + queries/mutations/actions.
    - Mutations are transactional.
-   - HTTP Actions via `httpRouter()` to expose a versioned REST API when needed.
 2. Frontend: Next.js (App Router)
    - React Framework + TypeScript
    - Use Server Components by default, with Server Actions / Route Handlers for
@@ -14,7 +13,7 @@
    - A hybrid between headless components and a component library approach.
    - Allows easy adjustment and extensibility.
 4. AuthN/AuthZ: Convex Auth
-   - Email + Password flow for MVP.
+   - Email and Password authentication.
 5. Deployment
    - Backend: Convex managed deployment
    - Frontend: Node.js application on Render
@@ -23,8 +22,8 @@
 
 ### PREVENT 2023: Fields and Valid Values
 
-Note: values outside the stated ranges should be clamped to the nearest valid
-value by the calculator; risk estimates may be less accurate.
+Note: the calculator should clamp values outside the stated ranges to the
+nearest valid value; risk estimates may be less accurate.
 
 Required fields:
 
