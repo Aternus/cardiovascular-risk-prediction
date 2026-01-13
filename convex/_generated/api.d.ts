@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as common_consts from "../common/consts.js";
 import type * as common_types from "../common/types.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as intake from "../intake.js";
 import type * as numbers from "../numbers.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "common/consts": typeof common_consts;
   "common/types": typeof common_types;
+  crons: typeof crons;
   http: typeof http;
   intake: typeof intake;
   numbers: typeof numbers;
