@@ -587,9 +587,23 @@ export default function RiskAssessment() {
     interpretation === "Unknown"
       ? "w-fit border-muted-foreground/30 text-muted-foreground"
       : "w-fit bg-amber-500 text-white hover:bg-amber-500";
+
+  const showAbsoluteRiskLoading =
+    isQueryLoading ||
+    isAssessmentLoading ||
+    (assessmentStatus === "idle" && mdCalcPayload !== null);
+  const showEventBreakdownLoading =
+    isQueryLoading ||
+    isAssessmentLoading ||
+    (assessmentStatus === "idle" && mdCalcPayload !== null);
+  const showRiskFactorLoading =
+    isQueryLoading ||
+    isAssessmentLoading ||
+    (assessmentStatus === "idle" && clinCalcPayload !== null);
+
   const riskFactorEmptyMessage = isMissingData
     ? "Complete your intake to see risk factor contributions."
-    : isQueryLoading || isAssessmentLoading
+    : showRiskFactorLoading
       ? "Calculating risk factor contributions..."
       : "Risk factor contributions are unavailable.";
 
@@ -615,7 +629,7 @@ export default function RiskAssessment() {
                 <p className={statusMessageClassName}>{statusMessage}</p>
               ) : null}
               <div className="flex flex-wrap items-end gap-4">
-                {isQueryLoading || isAssessmentLoading ? (
+                {showAbsoluteRiskLoading ? (
                   <Skeleton className="h-12 w-28" />
                 ) : (
                   <div className="text-5xl font-semibold tracking-tight">
@@ -709,17 +723,33 @@ export default function RiskAssessment() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {eventBreakdown.map((event) => (
-                  <TableRow key={event.label}>
-                    <TableCell className="font-medium">{event.label}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {event.description}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {event.value}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {showEventBreakdownLoading
+                  ? Array.from({ length: 3 }).map((_, index) => (
+                      <TableRow key={`event-loading-${index}`}>
+                        <TableCell>
+                          <Skeleton className="h-4 w-10" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-40" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="ml-auto h-4 w-12" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  : eventBreakdown.map((event) => (
+                      <TableRow key={event.label}>
+                        <TableCell className="font-medium">
+                          {event.label}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {event.description}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {event.value}
+                        </TableCell>
+                      </TableRow>
+                    ))}
               </TableBody>
             </Table>
           </CardContent>
@@ -733,7 +763,13 @@ export default function RiskAssessment() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {riskFactors.length === 0 ? (
+            {showRiskFactorLoading ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={`risk-factor-loading-${index}`}>
+                  <Skeleton className="h-4 w-28" />
+                </div>
+              ))
+            ) : riskFactors.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {riskFactorEmptyMessage}
               </p>
