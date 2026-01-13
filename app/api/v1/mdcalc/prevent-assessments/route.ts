@@ -1,4 +1,5 @@
 import {
+  MD_CALC_URL,
   mdCalcCalculateRiskAssessmentRequestDTOSchema,
   mdCalcPreventResponseSchema,
 } from "@/contracts/v1/mdcalc";
@@ -8,8 +9,6 @@ import type {
   TmdCalcCalculateRiskAssessmentResponseDTO,
   TMdCalcPREVENTAssessmentRequestDTO,
 } from "@/contracts/v1/mdcalc";
-
-const MD_CALC_URL = "https://www.mdcalc.com/api/v1/calc/10491/calculate";
 
 export async function POST(request: NextRequest) {
   let payload: unknown;
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
   }
 
   const responseBody: TmdCalcCalculateRiskAssessmentResponseDTO = {
-    assessment: parsedResponse.data,
+    assessments: parsedResponse.data,
   };
 
   return NextResponse.json(responseBody, { status: 201 });

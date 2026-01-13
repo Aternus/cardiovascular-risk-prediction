@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const MD_CALC_URL = "https://www.mdcalc.com/api/v1/calc/10491/calculate";
+
 const binaryFlagSchema = z.union([z.literal(0), z.literal(1)]);
 
 const mdCalcPreventSchema = z.object({
@@ -42,5 +44,5 @@ export const mdCalcCalculateRiskAssessmentRequestDTOSchema = z.object({
 });
 
 export type TmdCalcCalculateRiskAssessmentResponseDTO = {
-  assessment: TMdCalcPREVENTAssessmentResponseDTO;
+  assessments: TMdCalcPREVENTAssessmentResponseDTO;
 };
