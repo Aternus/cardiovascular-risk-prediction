@@ -36,7 +36,7 @@ import type {
 
 type TAssessmentStatus = "idle" | "loading" | "success" | "partial" | "error";
 type TRiskCategory = "Low" | "Borderline" | "Intermediate" | "High" | "Unknown";
-type TRiskFactorImpact = "Higher risk" | "Protective";
+type TRiskFactorImpact = "Harmful" | "Protective";
 
 type TRiskFactor = {
   label: string;
@@ -168,6 +168,13 @@ const parsePreventBreakdown = (message: string) => {
   return result;
 };
 
+const formatUpdatedLabel = (date: Date) =>
+  `Updated ${date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+
 const formatRiskFactorLabel = (value: string) => {
   const normalized = value.toLowerCase();
 
@@ -236,6 +243,7 @@ const readJsonResponse = async <T,>(
 export default function RiskAssessment() {
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
+  const updatedLabel = useMemo(() => formatUpdatedLabel(new Date()), []);
 
   const birthDate = useMemo(() => {
     if (!profileData) {
@@ -457,17 +465,6 @@ export default function RiskAssessment() {
     return getPercentFromOutput(totalOutput);
   }, [displayMdCalcAssessments]);
 
-  const medianRiskPercent = useMemo(() => {
-    if (!displayMdCalcAssessments?.output?.length) {
-      return null;
-    }
-
-    const medianOutput = displayMdCalcAssessments.output.find((output) =>
-      /median/i.test(`${output.name} ${output.message}`),
-    );
-    return getPercentFromOutput(medianOutput);
-  }, [displayMdCalcAssessments]);
-
   const breakdownFromMessage = useMemo(() => {
     if (!displayMdCalcAssessments?.output?.length) {
       return null;
@@ -491,13 +488,15 @@ export default function RiskAssessment() {
     );
     const outputsToSearch = tenYearOutputs.length ? tenYearOutputs : outputs;
 
-    return eventBreakdownConfig.map((event) => {
+    const rows = eventBreakdownConfig.map((event, index) => {
       const parsedValue = breakdownFromMessage?.[event.key];
       if (typeof parsedValue === "number") {
         return {
           label: event.label,
           description: event.description,
           value: formatPercent(parsedValue),
+          numericValue: parsedValue,
+          index,
         };
       }
 
@@ -506,12 +505,26 @@ export default function RiskAssessment() {
           keyword.test(`${entry.name} ${entry.message}`),
         ),
       );
+      const numericValue = getPercentFromOutput(output);
       return {
         label: event.label,
         description: event.description,
-        value: formatPercent(getPercentFromOutput(output)),
+        value: formatPercent(numericValue),
+        numericValue,
+        index,
       };
     });
+
+    return rows
+      .sort((a, b) => {
+        const aValue = a.numericValue ?? -1;
+        const bValue = b.numericValue ?? -1;
+        if (aValue === bValue) {
+          return a.index - b.index;
+        }
+        return bValue - aValue;
+      })
+      .map(({ label, description, value }) => ({ label, description, value }));
   }, [displayMdCalcAssessments, breakdownFromMessage]);
 
   const riskFactors = useMemo<TRiskFactor[]>(() => {
@@ -533,7 +546,7 @@ export default function RiskAssessment() {
 
     return topFactors.map((factor) => {
       const impact: TRiskFactorImpact =
-        factor.value >= 0 ? "Higher risk" : "Protective";
+        factor.value >= 0 ? "Harmful" : "Protective";
       const strength =
         maxAbs === 0 ? 0 : Math.round((Math.abs(factor.value) / maxAbs) * 100);
 
@@ -559,7 +572,6 @@ export default function RiskAssessment() {
       ? "Complete your intake to see your risk category."
       : interpretationDescriptions[interpretation];
   const absoluteRiskDisplay = formatPercent(totalRiskPercent);
-  const medianRiskDisplay = formatPercent(medianRiskPercent);
   const riskProgressValue =
     totalRiskPercent === null ? 0 : Math.min(100, totalRiskPercent);
   const statusMessage = isMissingData
@@ -588,13 +600,7 @@ export default function RiskAssessment() {
           <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900" />
           <CardHeader className="relative">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge>PREVENT 2023</Badge>
-              <Badge
-                variant="outline"
-                className="border-muted-foreground/30 text-muted-foreground"
-              >
-                Updated Aug 14, 2024
-              </Badge>
+              <Badge>{updatedLabel}</Badge>
             </div>
             <CardTitle className="text-2xl sm:text-3xl">
               10-year cardiovascular event risk
@@ -616,13 +622,8 @@ export default function RiskAssessment() {
                     {absoluteRiskDisplay}
                   </div>
                 )}
-                <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   <span>Absolute risk</span>
-                  {isQueryLoading || isAssessmentLoading ? (
-                    <Skeleton className="h-4 w-32" />
-                  ) : (
-                    <span>Median for age: {medianRiskDisplay}</span>
-                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-2">
@@ -636,7 +637,7 @@ export default function RiskAssessment() {
               <div className="grid gap-3 sm:grid-cols-3 text-sm">
                 <div className="rounded-lg border bg-background/70 px-3 py-2">
                   <p className="text-muted-foreground">Model</p>
-                  <p className="font-medium">PREVENT</p>
+                  <p className="font-medium">PREVENT 2023</p>
                 </div>
                 <div className="rounded-lg border bg-background/70 px-3 py-2">
                   <p className="text-muted-foreground">Horizon</p>
@@ -655,7 +656,7 @@ export default function RiskAssessment() {
           <CardHeader>
             <CardTitle>Interpretation</CardTitle>
             <CardDescription>
-              American Heart Association risk categories.
+              According to American Heart Association risk categories.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
