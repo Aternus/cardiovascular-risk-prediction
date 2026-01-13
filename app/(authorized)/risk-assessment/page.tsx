@@ -240,6 +240,21 @@ const readJsonResponse = async <T,>(
   return payload as T;
 };
 
+const toFriendlyFetchError = (label: string, error: unknown) => {
+  if (error instanceof Error) {
+    const message = error.message;
+    if (
+      /networkerror|failed to fetch|fetch failed|load failed/i.test(message)
+    ) {
+      return `${label} is unreachable right now.`;
+    }
+
+    return message;
+  }
+
+  return `${label} is unavailable right now.`;
+};
+
 export default function RiskAssessment() {
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
@@ -281,7 +296,7 @@ export default function RiskAssessment() {
 
   const [assessmentStatus, setAssessmentStatus] =
     useState<TAssessmentStatus>("idle");
-  const [assessmentError, setAssessmentError] = useState<string | null>(null);
+  const [assessmentErrors, setAssessmentErrors] = useState<string[]>([]);
   const [mdCalcAssessments, setMdCalcAssessments] = useState<
     TmdCalcCalculateRiskAssessmentResponseDTO["assessments"] | null
   >(null);
@@ -355,7 +370,7 @@ export default function RiskAssessment() {
 
     const fetchAssessments = async () => {
       setAssessmentStatus("loading");
-      setAssessmentError(null);
+      setAssessmentErrors([]);
 
       const mdCalcPromise = fetch("/api/v1/mdcalc/prevent-assessments", {
         method: "POST",
@@ -398,22 +413,14 @@ export default function RiskAssessment() {
         setMdCalcAssessments(mdCalcResult.value.assessments);
       } else {
         setMdCalcAssessments(null);
-        errors.push(
-          mdCalcResult.reason instanceof Error
-            ? mdCalcResult.reason.message
-            : "MdCalc request failed.",
-        );
+        errors.push(toFriendlyFetchError("MdCalc", mdCalcResult.reason));
       }
 
       if (clinCalcResult.status === "fulfilled") {
         setClinCalcContributions(clinCalcResult.value.contributions);
       } else {
         setClinCalcContributions(null);
-        errors.push(
-          clinCalcResult.reason instanceof Error
-            ? clinCalcResult.reason.message
-            : "ClinCalc request failed.",
-        );
+        errors.push(toFriendlyFetchError("ClinCalc", clinCalcResult.reason));
       }
 
       if (errors.length === 0) {
@@ -421,7 +428,7 @@ export default function RiskAssessment() {
         return;
       }
 
-      setAssessmentError(errors.join(" "));
+      setAssessmentErrors(Array.from(new Set(errors)));
       if (
         mdCalcResult.status === "fulfilled" ||
         clinCalcResult.status === "fulfilled"
@@ -562,7 +569,13 @@ export default function RiskAssessment() {
   const isQueryLoading = profileData === undefined || intakeData === undefined;
   const isMissingData = profileData === null || intakeData === null;
   const isAssessmentLoading = assessmentStatus === "loading";
-  const combinedError = validationError ?? assessmentError;
+  const combinedErrors = validationError ? [validationError] : assessmentErrors;
+  const hasAssessmentErrors = combinedErrors.length > 0;
+
+  const absoluteRiskDisplay = formatPercent(totalRiskPercent);
+  const riskProgressValue =
+    totalRiskPercent === null ? 0 : Math.min(100, totalRiskPercent);
+
   const interpretation: TRiskCategory =
     totalRiskPercent === null
       ? "Unknown"
@@ -571,16 +584,22 @@ export default function RiskAssessment() {
     interpretation === "Unknown"
       ? "Complete your intake to see your risk category."
       : interpretationDescriptions[interpretation];
-  const absoluteRiskDisplay = formatPercent(totalRiskPercent);
-  const riskProgressValue =
-    totalRiskPercent === null ? 0 : Math.min(100, totalRiskPercent);
-  const statusMessage = isMissingData
+
+  const showStatusCard = hasAssessmentErrors || isMissingData;
+  const statusCardTitle = isMissingData
+    ? "More information needed"
+    : "Assessment unavailable";
+  const statusCardDescription = isMissingData
     ? "Complete your intake to generate a risk assessment."
-    : combinedError;
-  const showStatusMessage = Boolean(statusMessage);
-  const statusMessageClassName = isMissingData
-    ? "text-sm text-muted-foreground"
-    : "text-sm text-destructive";
+    : "We couldn't retrieve results from the server.";
+  const statusMessages = hasAssessmentErrors ? combinedErrors : [];
+  const statusCardClassName = isMissingData
+    ? "border-muted/40 bg-muted/15"
+    : "border-destructive/40 bg-destructive/10";
+  const statusCardTextClassName = isMissingData
+    ? "text-muted-foreground"
+    : "text-destructive";
+
   const interpretationBadgeVariant =
     interpretation === "Unknown" ? "outline" : "default";
   const interpretationBadgeClassName =
@@ -610,61 +629,82 @@ export default function RiskAssessment() {
   return (
     <div className="flex flex-col gap-8">
       <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <Card className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900" />
-          <CardHeader className="relative">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge>{updatedLabel}</Badge>
-            </div>
-            <CardTitle className="text-2xl sm:text-3xl">
-              10-year cardiovascular event risk
-            </CardTitle>
-            <CardDescription>
-              Your personalized estimate based on the latest measurements.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative">
-            <div className="flex flex-col gap-6">
-              {showStatusMessage ? (
-                <p className={statusMessageClassName}>{statusMessage}</p>
-              ) : null}
-              <div className="flex flex-wrap items-end gap-4">
-                {showAbsoluteRiskLoading ? (
-                  <Skeleton className="h-12 w-28" />
-                ) : (
-                  <div className="text-5xl font-semibold tracking-tight">
-                    {absoluteRiskDisplay}
+        <div className="flex flex-col gap-6">
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900" />
+            <CardHeader className="relative">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge>{updatedLabel}</Badge>
+              </div>
+              <CardTitle className="text-2xl sm:text-3xl">
+                10-year cardiovascular event risk
+              </CardTitle>
+              <CardDescription>
+                Your personalized estimate based on the latest measurements.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-wrap items-end gap-4">
+                  {showAbsoluteRiskLoading ? (
+                    <Skeleton className="h-12 w-28" />
+                  ) : (
+                    <div className="text-5xl font-semibold tracking-tight">
+                      {absoluteRiskDisplay}
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    <span>Absolute risk</span>
                   </div>
-                )}
-                <div className="text-sm text-muted-foreground">
-                  <span>Absolute risk</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>0%</span>
+                    <span>20%</span>
+                    <span>40%</span>
+                  </div>
+                  <Progress value={riskProgressValue} className="h-3" />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3 text-sm">
+                  <div className="rounded-lg border bg-background/70 px-3 py-2">
+                    <p className="text-muted-foreground">Model</p>
+                    <p className="font-medium">PREVENT 2023</p>
+                  </div>
+                  <div className="rounded-lg border bg-background/70 px-3 py-2">
+                    <p className="text-muted-foreground">Horizon</p>
+                    <p className="font-medium">10 years</p>
+                  </div>
+                  <div className="rounded-lg border bg-background/70 px-3 py-2">
+                    <p className="text-muted-foreground">Assessment</p>
+                    <p className="font-medium">Cardiovascular event</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>0%</span>
-                  <span>20%</span>
-                  <span>40%</span>
-                </div>
-                <Progress value={riskProgressValue} className="h-3" />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3 text-sm">
-                <div className="rounded-lg border bg-background/70 px-3 py-2">
-                  <p className="text-muted-foreground">Model</p>
-                  <p className="font-medium">PREVENT 2023</p>
-                </div>
-                <div className="rounded-lg border bg-background/70 px-3 py-2">
-                  <p className="text-muted-foreground">Horizon</p>
-                  <p className="font-medium">10 years</p>
-                </div>
-                <div className="rounded-lg border bg-background/70 px-3 py-2">
-                  <p className="text-muted-foreground">Assessment</p>
-                  <p className="font-medium">Cardiovascular event</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {showStatusCard ? (
+            <Card className={statusCardClassName}>
+              <CardHeader className="pb-3">
+                <CardTitle className={`text-base ${statusCardTextClassName}`}>
+                  {statusCardTitle}
+                </CardTitle>
+                <CardDescription className={statusCardTextClassName}>
+                  {statusCardDescription}
+                </CardDescription>
+              </CardHeader>
+              {statusMessages.length > 0 ? (
+                <CardContent className={`text-sm ${statusCardTextClassName}`}>
+                  <div className="flex flex-col gap-1">
+                    {statusMessages.map((message, index) => (
+                      <span key={`assessment-message-${index}`}>{message}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              ) : null}
+            </Card>
+          ) : null}
+        </div>
 
         <Card>
           <CardHeader>
