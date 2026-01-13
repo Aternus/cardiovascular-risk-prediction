@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as intake from "../intake.js";
 import type * as numbers from "../numbers.js";
 import type * as patients from "../patients.js";
+import type * as riskAssessments from "../riskAssessments.js";
 import type * as validators_form from "../validators/form.js";
 import type * as validators_intake from "../validators/intake.js";
 import type * as validators_patients from "../validators/patients.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   intake: typeof intake;
   numbers: typeof numbers;
   patients: typeof patients;
+  riskAssessments: typeof riskAssessments;
   "validators/form": typeof validators_form;
   "validators/intake": typeof validators_intake;
   "validators/patients": typeof validators_patients;

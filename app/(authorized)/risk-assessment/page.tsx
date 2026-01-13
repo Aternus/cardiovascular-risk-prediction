@@ -26,8 +26,8 @@ import {
 import { api } from "@/convex/_generated/api";
 import { parseDateFromYMD } from "@/lib/date";
 import { getAgeInYears } from "@/lib/form.utils";
-import { useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   eventBreakdownConfig,
@@ -62,6 +62,12 @@ import type {
 export default function RiskAssessment() {
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
+  const isQueryResolved = profileData !== undefined && intakeData !== undefined;
+
+  const recordRiskAssessment = useMutation(
+    api.riskAssessments.recordRiskAssessment,
+  );
+  const hasRecordedAssessmentRef = useRef(false);
 
   const [assessmentStatus, setAssessmentStatus] =
     useState<TAssessmentStatus>("idle");
@@ -252,6 +258,56 @@ export default function RiskAssessment() {
       controller.abort();
     };
   }, [mdCalcPayload, clinCalcPayload]);
+
+  useEffect(() => {
+    if (!isQueryResolved) {
+      return;
+    }
+
+    if (hasRecordedAssessmentRef.current) {
+      return;
+    }
+
+    if (assessmentStatus === "loading") {
+      return;
+    }
+
+    if (assessmentStatus === "idle" && mdCalcPayload && clinCalcPayload) {
+      return;
+    }
+
+    hasRecordedAssessmentRef.current = true;
+
+    const errors = validationError ? [validationError] : assessmentErrors;
+    const inputSnapshot = {
+      profile: profileData ?? null,
+      intake: intakeData ?? null,
+      age,
+      mdCalcPayload,
+      clinCalcPayload,
+    };
+    const results = {
+      status: assessmentStatus,
+      errors,
+      mdCalc: mdCalcAssessments,
+      clinCalc: clinCalcContributions,
+    };
+
+    void recordRiskAssessment({ inputSnapshot, results }).catch(() => {});
+  }, [
+    isQueryResolved,
+    assessmentStatus,
+    assessmentErrors,
+    validationError,
+    profileData,
+    intakeData,
+    age,
+    clinCalcPayload,
+    clinCalcContributions,
+    mdCalcPayload,
+    mdCalcAssessments,
+    recordRiskAssessment,
+  ]);
 
   const displayMdCalcAssessments =
     mdCalcPayload && assessmentStatus !== "loading" ? mdCalcAssessments : null;
