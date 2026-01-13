@@ -12,7 +12,7 @@ export function SignOutButton() {
     <>
       {isAuthenticated && (
         <button
-          className="bg-slate-600 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+          className="cursor-pointer rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-slate-700 hover:shadow-md dark:bg-slate-700 dark:hover:bg-slate-600"
           onClick={() =>
             void signOut().then(() => {
               router.push("/signin");

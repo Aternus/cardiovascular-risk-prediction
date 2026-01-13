@@ -683,7 +683,7 @@ export const MultiStepOnboardingForm = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <CardTitle>{currentForm.title}</CardTitle>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               Step {currentStep + 1} of {steps.length}
             </p>
           </div>

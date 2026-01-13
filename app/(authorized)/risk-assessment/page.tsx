@@ -403,13 +403,13 @@ export default function RiskAssessment() {
     : "We couldn't retrieve results from the server.";
   const statusMessages = hasAssessmentErrors ? combinedErrors : [];
   const statusCardClassName = isMissingData
-    ? "border-amber-300/80 bg-amber-50/80 shadow-md dark:border-amber-500/30 dark:bg-amber-950/50"
+    ? "border-chart-4/40 bg-chart-4/15 shadow-md"
     : "border-destructive/40 bg-destructive/10";
   const statusCardTextClassName = isMissingData
-    ? "text-amber-800 dark:text-amber-200"
+    ? "text-foreground"
     : "text-destructive";
   const statusCardTitleClassName = isMissingData
-    ? "text-lg font-semibold text-amber-950 dark:text-amber-100"
+    ? "text-lg font-semibold text-foreground"
     : "text-base text-destructive";
 
   const interpretationBadgeVariant =
@@ -418,10 +418,10 @@ export default function RiskAssessment() {
     Exclude<TRiskCategory, "Unknown">,
     string
   > = {
-    Low: "bg-emerald-500 text-white hover:bg-emerald-500",
-    Borderline: "bg-amber-200 text-amber-900 hover:bg-amber-200",
-    Intermediate: "bg-amber-500 text-white hover:bg-amber-500",
-    High: "bg-red-500 text-white hover:bg-red-500",
+    Low: "bg-emerald-700 text-neutral-50 hover:bg-emerald-800",
+    Borderline: "bg-yellow-700 text-neutral-50 hover:bg-yellow-800",
+    Intermediate: "bg-orange-700 text-neutral-50 hover:bg-orange-800",
+    High: "bg-red-700 text-neutral-50 hover:bg-red-800",
   };
   const interpretationBadgeClassName =
     interpretation === "Unknown"
@@ -452,7 +452,7 @@ export default function RiskAssessment() {
       <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-6">
           <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900" />
+            <div className="absolute inset-0 bg-linear-to-br from-background via-card to-muted" />
             <CardHeader className="relative">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge>{updatedLabel}</Badge>
@@ -486,7 +486,7 @@ export default function RiskAssessment() {
                   </div>
                   <Progress value={riskProgressValue} className="h-3" />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3 text-sm">
+                <div className="grid gap-3 text-sm sm:grid-cols-3">
                   <div className="rounded-lg border bg-background/70 px-3 py-2">
                     <p className="text-muted-foreground">Model</p>
                     <p className="font-medium">PREVENT 2023</p>
@@ -568,7 +568,7 @@ export default function RiskAssessment() {
         </Card>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2 overflow-x-auto">
+      <section className="grid gap-6 overflow-x-auto lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Breakdown of CV events</CardTitle>
@@ -650,8 +650,8 @@ export default function RiskAssessment() {
                       <Badge
                         className={
                           factor.impact === "Protective"
-                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-200"
-                            : "bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/20 dark:text-rose-200"
+                            ? "bg-green-700 text-green-100 hover:bg-green-900"
+                            : "bg-rose-700 text-rose-100 hover:bg-rose-900"
                         }
                       >
                         {factor.impact}

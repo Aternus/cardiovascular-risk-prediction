@@ -10,9 +10,9 @@ export default function AuthorizedLayout({
 }) {
   return (
     <>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md p-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap justify-between items-center gap-4 shadow-sm">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-background/80 p-4 shadow-sm backdrop-blur-md">
         <Link href="/" aria-label="Go to the main page">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex min-w-0 items-center gap-4">
             <Image
               src="/brand-mark.svg"
               alt="Cardiovascular Risk Prediction System"
@@ -20,11 +20,11 @@ export default function AuthorizedLayout({
               height={40}
             />
 
-            <div className="min-w-0 flex flex-col gap-2">
-              <h1 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+            <div className="flex min-w-0 flex-col gap-2">
+              <h1 className="text-base leading-tight font-semibold text-foreground sm:text-lg">
                 Cardiovascular Risk Prediction System
               </h1>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
                 PREVENT™ Risk Assessment
               </p>
             </div>
@@ -36,7 +36,7 @@ export default function AuthorizedLayout({
           <SignOutButton />
         </div>
       </header>
-      <main className="p-8 flex flex-col gap-8">{children}</main>
+      <main className="flex flex-col gap-8 p-8">{children}</main>
     </>
   );
 }
