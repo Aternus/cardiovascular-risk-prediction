@@ -82,16 +82,19 @@ const eventBreakdownConfig = [
   {
     label: "CHD",
     description: "Coronary heart disease",
+    key: "chd",
     keywords: [/coronary/i, /\bchd\b/i, /myocard/i],
   },
   {
     label: "Stroke",
     description: "Ischemic or hemorrhagic",
+    key: "stroke",
     keywords: [/stroke/i],
   },
   {
     label: "HF",
     description: "Heart failure",
+    key: "hf",
     keywords: [/heart failure/i, /\bhf\b/i],
   },
 ] as const;
@@ -101,8 +104,13 @@ const parsePercentValue = (value: string) => {
   return match ? Number.parseFloat(match[0]) : null;
 };
 
+const percentFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
 const formatPercent = (value: number | null) =>
-  value === null ? "N/A" : `${value.toFixed(1)}%`;
+  value === null ? "N/A" : `${percentFormatter.format(value)}%`;
 
 const formatSignedPercent = (value: number) => {
   const rounded = value.toFixed(1);
@@ -136,6 +144,28 @@ const getPercentFromOutput = (output?: {
   return (
     parsePercentValue(output.value_text) ?? parsePercentValue(output.value)
   );
+};
+
+const stripHtml = (value: string) => value.replace(/<[^>]*>/g, " ");
+
+const parsePreventBreakdown = (message: string) => {
+  const cleaned = stripHtml(message);
+  const entries: Array<[RegExp, string]> = [
+    [/10-?Year ASCVD Risk:\s*([0-9.]+)%/i, "ascvd"],
+    [/10-?Year Heart Failure Risk:\s*([0-9.]+)%/i, "hf"],
+    [/10-?Year Coronary Heart Disease Risk:\s*([0-9.]+)%/i, "chd"],
+    [/10-?Year Stroke Risk:\s*([0-9.]+)%/i, "stroke"],
+  ];
+
+  const result: Partial<Record<string, number>> = {};
+  for (const [regex, key] of entries) {
+    const match = cleaned.match(regex);
+    if (match && match[1]) {
+      result[key] = Number.parseFloat(match[1]);
+    }
+  }
+
+  return result;
 };
 
 const formatRiskFactorLabel = (value: string) => {
@@ -438,6 +468,22 @@ export default function RiskAssessment() {
     return getPercentFromOutput(medianOutput);
   }, [displayMdCalcAssessments]);
 
+  const breakdownFromMessage = useMemo(() => {
+    if (!displayMdCalcAssessments?.output?.length) {
+      return null;
+    }
+
+    const detailedOutput = displayMdCalcAssessments.output.find((output) =>
+      /10-?year ascvd risk/i.test(stripHtml(output.message)),
+    );
+
+    if (!detailedOutput) {
+      return null;
+    }
+
+    return parsePreventBreakdown(detailedOutput.message);
+  }, [displayMdCalcAssessments]);
+
   const eventBreakdown = useMemo<TEventBreakdown[]>(() => {
     const outputs = displayMdCalcAssessments?.output ?? [];
     const tenYearOutputs = outputs.filter((output) =>
@@ -446,6 +492,15 @@ export default function RiskAssessment() {
     const outputsToSearch = tenYearOutputs.length ? tenYearOutputs : outputs;
 
     return eventBreakdownConfig.map((event) => {
+      const parsedValue = breakdownFromMessage?.[event.key];
+      if (typeof parsedValue === "number") {
+        return {
+          label: event.label,
+          description: event.description,
+          value: formatPercent(parsedValue),
+        };
+      }
+
       const output = outputsToSearch.find((entry) =>
         event.keywords.some((keyword) =>
           keyword.test(`${entry.name} ${entry.message}`),
@@ -457,7 +512,7 @@ export default function RiskAssessment() {
         value: formatPercent(getPercentFromOutput(output)),
       };
     });
-  }, [displayMdCalcAssessments]);
+  }, [displayMdCalcAssessments, breakdownFromMessage]);
 
   const riskFactors = useMemo<TRiskFactor[]>(() => {
     if (
