@@ -5,7 +5,7 @@ services:
     repo: "https://github.com/Aternus/cardiovascular-risk-prediction"
     plan: "free"
     region: "frankfurt"
-    buildCommand: "npm run build"
+    buildCommand: "npm run build:ci"
     startCommand: "npm run start"
     healthCheckPath: "/api/readiness"
     autoDeployTrigger: "commit"
