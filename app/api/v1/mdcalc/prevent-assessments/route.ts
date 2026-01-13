@@ -1,11 +1,11 @@
 import {
-  createMdCalcPreventAssessmentSchema,
+  mdCalcCalculateRiskAssessmentRequestDTOSchema,
   mdCalcPreventResponseSchema,
 } from "@/contracts/v1/mdcalc";
 import { NextRequest, NextResponse } from "next/server";
 
 import type {
-  TCreateMdCalcPreventAssessmentResponseDTO,
+  TmdCalcCalculateRiskAssessmentResponseDTO,
   TMdCalcPREVENTAssessmentRequestDTO,
 } from "@/contracts/v1/mdcalc";
 
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsedPayload = createMdCalcPreventAssessmentSchema.safeParse(payload);
+  const parsedPayload =
+    mdCalcCalculateRiskAssessmentRequestDTOSchema.safeParse(payload);
   if (!parsedPayload.success) {
     return NextResponse.json(
       {
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const responseBody: TCreateMdCalcPreventAssessmentResponseDTO = {
+  const responseBody: TmdCalcCalculateRiskAssessmentResponseDTO = {
     assessment: parsedResponse.data,
   };
 

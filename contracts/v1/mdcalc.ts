@@ -29,41 +29,18 @@ export const mdCalcPreventResponseSchema = z.object({
   ),
 });
 
-export type TMdCalcBinaryFlagDTO = 0 | 1;
+export type TMdCalcPREVENTAssessmentRequestDTO = z.infer<
+  typeof mdCalcPreventSchema
+>;
 
-export type TMdCalcPREVENTAssessmentRequestDTO = {
-  UOMSYSTEM: boolean;
-  model: number;
-  sex: TMdCalcBinaryFlagDTO;
-  age: number;
-  tc: number;
-  hdl: number;
-  sbp: number;
-  diabetes: TMdCalcBinaryFlagDTO;
-  smoker: TMdCalcBinaryFlagDTO;
-  egfr: number;
-  htn_med: TMdCalcBinaryFlagDTO;
-  statin: TMdCalcBinaryFlagDTO;
-  bmi: number;
-};
+export type TMdCalcPREVENTAssessmentResponseDTO = z.infer<
+  typeof mdCalcPreventResponseSchema
+>;
 
-export type TMdCalcPREVENTAssessmentOutputDTO = {
-  name: string;
-  value: string;
-  value_text: string;
-  message: string;
-};
-
-export type TMdCalcPREVENTAssessmentResponseDTO = {
-  output: TMdCalcPREVENTAssessmentOutputDTO[];
-};
-
-export type TCreateMdCalcPreventAssessmentResponseDTO = {
-  assessment: TMdCalcPREVENTAssessmentResponseDTO;
-};
-
-// TODO: Figure out the best practice with `request: NextRequest`
-
-export const createMdCalcPreventAssessmentSchema = z.object({
+export const mdCalcCalculateRiskAssessmentRequestDTOSchema = z.object({
   body: mdCalcPreventSchema,
 });
+
+export type TmdCalcCalculateRiskAssessmentResponseDTO = {
+  assessment: TMdCalcPREVENTAssessmentResponseDTO;
+};
