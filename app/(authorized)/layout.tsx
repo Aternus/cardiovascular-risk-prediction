@@ -9,31 +9,24 @@ export default function AuthorizedLayout({
 }) {
   return (
     <>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md p-4 border-b border-slate-200 dark:border-slate-700 flex flex-row justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3">
-            <Image src="/convex.svg" alt="Convex Logo" width={32} height={32} />
-            <div className="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
-            <Image
-              src="/nextjs-icon-light-background.svg"
-              alt="Next.js Logo"
-              width={32}
-              height={32}
-              className="dark:hidden"
-            />
-            <Image
-              src="/nextjs-icon-dark-background.svg"
-              alt="Next.js Logo"
-              width={32}
-              height={32}
-              className="hidden dark:block"
-            />
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md p-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap justify-between items-center gap-4 shadow-sm">
+        <div className="flex items-center gap-4 min-w-0">
+          <Image
+            src="/brand-mark.svg"
+            alt="Cardiovascular Risk Prediction System"
+            width={40}
+            height={40}
+          />
+          <div className="min-w-0 flex flex-col gap-2">
+            <h1 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+              Cardiovascular Risk Prediction System
+            </h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              PREVENT 2023 Risk Assessment
+            </p>
           </div>
-          <h1 className="font-semibold text-slate-800 dark:text-slate-200">
-            Convex + Next.js + Convex Auth
-          </h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <ThemeToggleButton />
           <SignOutButton />
         </div>

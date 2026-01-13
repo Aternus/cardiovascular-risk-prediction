@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   title: "Cardiovascular Risk Prediction",
   description: "",
   icons: {
-    icon: "/convex.svg",
+    icon: "/brand-mark.svg",
   },
 };
 

@@ -26,10 +26,10 @@ export default function SignIn() {
           <div className="text-center flex flex-col items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-slate-200/80 bg-white/80 shadow-lg backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/70">
               <Image
-                src="/convex.svg"
-                alt="Convex Logo"
-                width={56}
-                height={56}
+                src="/brand-mark.svg"
+                alt="Cardiovascular Risk Prediction System"
+                width={64}
+                height={64}
               />
             </div>
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">
