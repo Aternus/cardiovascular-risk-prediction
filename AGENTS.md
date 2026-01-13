@@ -22,6 +22,8 @@
 - `npm run lint`: Runs ESLint (Next.js + TypeScript + Convex rules; generated
   files are ignored).
 - `npm run format`: Formats the codebase with Prettier.
+- `npx convex codegen`: Updates the `convex/_generated/` folder based on the
+  convex files in `convex/`.
 
 ## Checklist (Before Finishing Any Coding Task)
 
