@@ -1,9 +1,5 @@
 "use client";
 
-import {
-  readJsonResponse,
-  toFriendlyFetchError,
-} from "@/app/(authorized)/risk-assessment/_lib/transport";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -26,9 +22,11 @@ import {
 import { api } from "@/convex/_generated/api";
 import { parseDateFromYMD } from "@/lib/date";
 import { getAgeInYears } from "@/lib/form.utils";
-import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "convex/react";
+import { useMemo } from "react";
 
+import { useCreateRiskAssessment } from "./_hooks/useCreateRiskAssessment";
+import { useGenerateRiskAssessment } from "./_hooks/useGenerateRiskAssessment";
 import {
   eventBreakdownConfig,
   formatPercent,
@@ -44,20 +42,13 @@ import {
 } from "./_lib/utils";
 
 import type {
-  TAssessmentStatus,
   TEventBreakdown,
   TRiskCategory,
   TRiskFactor,
   TRiskFactorImpact,
 } from "@/app/(authorized)/risk-assessment/_lib/types";
-import type {
-  TClinCalcCalculateRiskAssessmentRequestDTO,
-  TClinCalcCalculateRiskAssessmentResponseDTO,
-} from "@/contracts/v1/clincalc";
-import type {
-  TmdCalcCalculateRiskAssessmentRequestDTO,
-  TmdCalcCalculateRiskAssessmentResponseDTO,
-} from "@/contracts/v1/mdcalc";
+import type { TClinCalcCalculateRiskAssessmentRequestDTO } from "@/contracts/v1/clincalc";
+import type { TmdCalcCalculateRiskAssessmentRequestDTO } from "@/contracts/v1/mdcalc";
 
 type TAssessmentInputs = {
   age: number | null;
@@ -70,21 +61,6 @@ export default function RiskAssessment() {
   const profileData = useQuery(api.patients.getProfile);
   const intakeData = useQuery(api.intake.getIntake);
   const isQueryResolved = profileData !== undefined && intakeData !== undefined;
-
-  const recordRiskAssessment = useMutation(
-    api.riskAssessments.recordRiskAssessment,
-  );
-  const hasRecordedAssessmentRef = useRef(false);
-
-  const [assessmentStatus, setAssessmentStatus] =
-    useState<TAssessmentStatus>("idle");
-  const [assessmentErrors, setAssessmentErrors] = useState<string[]>([]);
-  const [mdCalcAssessments, setMdCalcAssessments] = useState<
-    TmdCalcCalculateRiskAssessmentResponseDTO["assessments"] | null
-  >(null);
-  const [clinCalcContributions, setClinCalcContributions] = useState<
-    TClinCalcCalculateRiskAssessmentResponseDTO["contributions"] | null
-  >(null);
 
   const updatedLabel = useMemo(() => formatUpdatedLabel(new Date()), []);
 
@@ -159,131 +135,14 @@ export default function RiskAssessment() {
     assessmentInputs;
   const hasMdCalcPayload = mdCalcPayload !== null;
   const hasClinCalcPayload = clinCalcPayload !== null;
-  const hasAssessmentInputs = hasMdCalcPayload && hasClinCalcPayload;
+  const {
+    assessmentStatus,
+    assessmentErrors,
+    mdCalcAssessments,
+    clinCalcContributions,
+  } = useGenerateRiskAssessment({ mdCalcPayload, clinCalcPayload });
 
-  useEffect(() => {
-    if (!hasAssessmentInputs) {
-      return;
-    }
-
-    const controller = new AbortController();
-    let isCurrent = true;
-
-    const fetchAssessments = async () => {
-      setAssessmentStatus("loading");
-      setAssessmentErrors([]);
-
-      const mdCalcPromise = fetch("/api/v1/mdcalc/prevent-assessments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mdCalcPayload),
-        cache: "no-store",
-        signal: controller.signal,
-      }).then((response) =>
-        readJsonResponse<TmdCalcCalculateRiskAssessmentResponseDTO>(
-          response,
-          "MdCalc request failed.",
-        ),
-      );
-
-      const clinCalcPromise = fetch("/api/v1/clincalc/prevent-assessments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(clinCalcPayload),
-        cache: "no-store",
-        signal: controller.signal,
-      }).then((response) =>
-        readJsonResponse<TClinCalcCalculateRiskAssessmentResponseDTO>(
-          response,
-          "ClinCalc request failed.",
-        ),
-      );
-
-      const [mdCalcResult, clinCalcResult] = await Promise.allSettled([
-        mdCalcPromise,
-        clinCalcPromise,
-      ]);
-
-      if (!isCurrent || controller.signal.aborted) {
-        return;
-      }
-
-      const errors: string[] = [];
-
-      if (mdCalcResult.status === "fulfilled") {
-        setMdCalcAssessments(mdCalcResult.value.assessments);
-      } else {
-        setMdCalcAssessments(null);
-        errors.push(toFriendlyFetchError("MdCalc", mdCalcResult.reason));
-      }
-
-      if (clinCalcResult.status === "fulfilled") {
-        setClinCalcContributions(clinCalcResult.value.contributions);
-      } else {
-        setClinCalcContributions(null);
-        errors.push(toFriendlyFetchError("ClinCalc", clinCalcResult.reason));
-      }
-
-      if (errors.length === 0) {
-        setAssessmentStatus("success");
-        return;
-      }
-
-      setAssessmentErrors(Array.from(new Set(errors)));
-      if (
-        mdCalcResult.status === "fulfilled" ||
-        clinCalcResult.status === "fulfilled"
-      ) {
-        setAssessmentStatus("partial");
-      } else {
-        setAssessmentStatus("error");
-      }
-    };
-
-    void fetchAssessments();
-
-    return () => {
-      isCurrent = false;
-      controller.abort();
-    };
-  }, [mdCalcPayload, clinCalcPayload, hasAssessmentInputs]);
-
-  useEffect(() => {
-    if (!isQueryResolved) {
-      return;
-    }
-
-    if (hasRecordedAssessmentRef.current) {
-      return;
-    }
-
-    if (assessmentStatus === "loading") {
-      return;
-    }
-
-    if (assessmentStatus === "idle" && hasAssessmentInputs) {
-      return;
-    }
-
-    hasRecordedAssessmentRef.current = true;
-
-    const errors = validationError ? [validationError] : assessmentErrors;
-    const inputSnapshot = {
-      profile: profileData ?? null,
-      intake: intakeData ?? null,
-      age,
-      mdCalcPayload,
-      clinCalcPayload,
-    };
-    const results = {
-      status: assessmentStatus,
-      errors,
-      mdCalc: mdCalcAssessments,
-      clinCalc: clinCalcContributions,
-    };
-
-    void recordRiskAssessment({ inputSnapshot, results }).catch(() => {});
-  }, [
+  useCreateRiskAssessment({
     isQueryResolved,
     assessmentStatus,
     assessmentErrors,
@@ -291,13 +150,11 @@ export default function RiskAssessment() {
     profileData,
     intakeData,
     age,
-    clinCalcPayload,
-    clinCalcContributions,
     mdCalcPayload,
+    clinCalcPayload,
     mdCalcAssessments,
-    hasAssessmentInputs,
-    recordRiskAssessment,
-  ]);
+    clinCalcContributions,
+  });
 
   const displayMdCalcAssessments =
     hasMdCalcPayload && assessmentStatus !== "loading"
