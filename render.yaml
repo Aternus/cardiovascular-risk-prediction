@@ -1,0 +1,11 @@
+services:
+  - type: "web"
+    name: "cv-risk-prediction"
+    runtime: "node"
+    repo: "https://github.com/Aternus/cardiovascular-risk-prediction"
+    plan: "free"
+    region: "frankfurt"
+    buildCommand: "npm run build"
+    startCommand: "npm run start"
+    healthCheckPath: "/api/readiness"
+    autoDeployTrigger: "commit"
