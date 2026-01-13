@@ -4,7 +4,7 @@ import { MultiStepOnboardingForm } from "./MultiStepOnboardingForm";
 
 export default function Onboarding() {
   return (
-    <div className="max-w-1/2 p-10">
+    <div className="max-w-xl">
       <MultiStepOnboardingForm />
     </div>
   );

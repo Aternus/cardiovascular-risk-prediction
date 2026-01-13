@@ -568,7 +568,7 @@ export default function RiskAssessment() {
         </Card>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 lg:grid-cols-2 overflow-x-auto">
         <Card>
           <CardHeader>
             <CardTitle>Breakdown of CV events</CardTitle>
