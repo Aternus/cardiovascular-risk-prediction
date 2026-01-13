@@ -1,0 +1,14 @@
+export const PATIENT_MEASUREMENT_KIND = [
+  "TOTAL_CHOLESTEROL",
+  "HDL_CHOLESTEROL",
+  "SYSTOLIC_BP",
+  "BMI",
+  "EGFR",
+] as const;
+
+export const CLINICAL_EVENT_KIND = [
+  "DIABETES",
+  "SMOKING",
+  "ANTIHYPERTENSIVE",
+  "STATIN",
+] as const;

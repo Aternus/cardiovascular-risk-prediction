@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 
 import { mutation } from "./_generated/server";
@@ -20,8 +21,9 @@ export const upsertIntake = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await getAuthUserId(ctx);
+
+    if (!userId) {
       throw new ConvexError({ kind: "auth", message: "Not authenticated" });
     }
 
@@ -68,7 +70,7 @@ export const upsertIntake = mutation({
 
     const patient = await ctx.db
       .query("patients")
-      .withIndex("by_userId", (q) => q.eq("userId", identity.tokenIdentifier))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
 
     if (!patient) {

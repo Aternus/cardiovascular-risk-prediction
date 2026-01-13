@@ -44,10 +44,10 @@ import {
   rangedNumberField,
 } from "@/lib/form.utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -133,8 +133,12 @@ const steps: TStep[] = [
 
 export const MultiStepOnboardingForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const hasHydratedRef = useRef(false);
+
   const upsertProfile = useMutation(api.patients.upsertProfile);
   const upsertIntake = useMutation(api.intake.upsertIntake);
+
+  const onboardingData = useQuery(api.patients.getOnboardingData);
 
   const today = getTodayDate();
   const minDateOfBirth = getDateYearsAgo(FIELD_RANGES.age.max, today);
@@ -165,6 +169,44 @@ export const MultiStepOnboardingForm = () => {
     mode: "onChange",
     shouldUnregister: false,
   });
+
+  const isDirty = form.formState.isDirty;
+
+  useEffect(() => {
+    if (!onboardingData || hasHydratedRef.current || isDirty) {
+      return;
+    }
+
+    const currentValues = form.getValues();
+    const nextValues: TFormInput = {
+      ...currentValues,
+      firstName: onboardingData.profile.firstName,
+      lastName: onboardingData.profile.lastName,
+      sexAtBirth: onboardingData.profile.sexAtBirth,
+      dateOfBirth: onboardingData.profile.dateOfBirth,
+      totalCholesterol:
+        onboardingData.measurements.totalCholesterol ??
+        currentValues.totalCholesterol,
+      hdlCholesterol:
+        onboardingData.measurements.hdlCholesterol ??
+        currentValues.hdlCholesterol,
+      systolicBp:
+        onboardingData.measurements.systolicBP ?? currentValues.systolicBp,
+      bmi: onboardingData.measurements.bmi ?? currentValues.bmi,
+      egfr: onboardingData.measurements.eGFR ?? currentValues.egfr,
+      isDiabetes:
+        onboardingData.clinical.isDiabetes ?? currentValues.isDiabetes,
+      isSmoker: onboardingData.clinical.isSmoker ?? currentValues.isSmoker,
+      isAntiHypertensiveMedication:
+        onboardingData.clinical.isTakingAntihypertensive ??
+        currentValues.isAntiHypertensiveMedication,
+      isStatins:
+        onboardingData.clinical.isTakingStatin ?? currentValues.isStatins,
+    };
+
+    form.reset(nextValues, { keepDirtyValues: true });
+    hasHydratedRef.current = true;
+  }, [form, isDirty, onboardingData]);
 
   const handleNextButton = async () => {
     const currentFields = steps[currentStep].fields;
