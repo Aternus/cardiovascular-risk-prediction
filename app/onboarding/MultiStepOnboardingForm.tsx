@@ -38,6 +38,35 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+const toNumber = (value: string | number | undefined) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
+  if (Number.isNaN(value)) {
+    return undefined;
+  }
+
+  return value;
+};
+
+const floatField = (label: string) =>
+  z.preprocess(
+    toNumber,
+    z.number({
+      error: `${label} is required`,
+    }),
+  );
+
 const formSchema = z.object({
   firstName: z
     .string()
@@ -64,70 +93,50 @@ const formSchema = z.object({
           : "Invalid date",
     })
     .refine((val) => !Number.isNaN(val.getTime()), "Invalid date"),
-  totalCholesterol: z
-    .string()
-    .min(1, "Total cholesterol is required")
-    .max(255, "Total cholesterol must be at most 255 characters"),
-  hdlCholesterol: z
-    .string()
-    .min(1, "HDL cholesterol is required")
-    .max(255, "HDL cholesterol must be at most 255 characters"),
-  systolicBp: z
-    .string()
-    .min(1, "Systolic BP is required")
-    .max(255, "Systolic BP must be at most 255 characters"),
-  bmi: z
-    .string()
-    .min(1, "BMI is required")
-    .max(255, "BMI must be at most 255 characters"),
-  egfr: z
-    .string()
-    .min(1, "eGFR is required")
-    .max(255, "eGFR must be at most 255 characters"),
+  totalCholesterol: floatField("Total cholesterol"),
+  hdlCholesterol: floatField("HDL cholesterol"),
+  systolicBp: floatField("Systolic BP"),
+  bmi: floatField("BMI"),
+  egfr: floatField("eGFR"),
   isDiabetes: z.boolean(),
   isSmoker: z.boolean(),
   isAntiHypertensiveMedication: z.boolean(),
   isStatins: z.boolean(),
 });
 
-type TFormSchema = z.infer<typeof formSchema>;
+type TFormSchema = z.output<typeof formSchema>;
+type TFormInput = z.input<typeof formSchema>;
+
+type Step = {
+  title: string;
+  description: string;
+  fields: Array<keyof TFormInput>;
+};
+
+const steps: Step[] = [
+  {
+    title: "Patient Profile",
+    description: "",
+    fields: ["firstName", "lastName", "gender", "dateOfBirth"],
+  },
+  {
+    title: "Measurements",
+    description: "",
+    fields: ["totalCholesterol", "hdlCholesterol", "systolicBp", "bmi", "egfr"],
+  },
+  {
+    title: "Clinical Status",
+    description: "",
+    fields: [
+      "isDiabetes",
+      "isSmoker",
+      "isAntiHypertensiveMedication",
+      "isStatins",
+    ],
+  },
+];
 
 export const MultiStepOnboardingForm = () => {
-  type Step = {
-    title: string;
-    description: string;
-    fields: Array<keyof TFormSchema>;
-  };
-
-  const steps: Step[] = [
-    {
-      title: "Patient Profile",
-      description: "",
-      fields: ["firstName", "lastName", "gender", "dateOfBirth"],
-    },
-    {
-      title: "Measurements",
-      description: "",
-      fields: [
-        "totalCholesterol",
-        "hdlCholesterol",
-        "systolicBp",
-        "bmi",
-        "egfr",
-      ],
-    },
-    {
-      title: "Clinical Status",
-      description: "",
-      fields: [
-        "isDiabetes",
-        "isSmoker",
-        "isAntiHypertensiveMedication",
-        "isStatins",
-      ],
-    },
-  ];
-
   const [currentStep, setCurrentStep] = useState(0);
 
   const currentForm = steps[currentStep];
@@ -135,7 +144,7 @@ export const MultiStepOnboardingForm = () => {
   const isLastStep = currentStep === steps.length - 1;
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const form = useForm<TFormSchema>({
+  const form = useForm<TFormInput, unknown, TFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       firstName: "",
@@ -153,6 +162,7 @@ export const MultiStepOnboardingForm = () => {
       isStatins: false,
     },
     mode: "onChange",
+    shouldUnregister: false,
   });
 
   const handleNextButton = async () => {
@@ -172,8 +182,6 @@ export const MultiStepOnboardingForm = () => {
   };
 
   const onSubmit = async (values: TFormSchema) => {
-    console.log({ values });
-
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast.success("Form successfully submitted");
@@ -185,7 +193,7 @@ export const MultiStepOnboardingForm = () => {
     switch (currentStep) {
       case 0: {
         return (
-          <FieldGroup>
+          <FieldGroup key="step-0">
             <Controller
               name="firstName"
               control={form.control}
@@ -300,7 +308,7 @@ export const MultiStepOnboardingForm = () => {
 
       case 1: {
         return (
-          <FieldGroup>
+          <FieldGroup key="step-1">
             <Controller
               name="totalCholesterol"
               control={form.control}
@@ -315,6 +323,9 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
                     disabled={false}
                   />
                   <FieldDescription>130–320 mg/dL</FieldDescription>
@@ -339,6 +350,9 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
                     disabled={false}
                   />
                   <FieldDescription>20–100 mg/dL</FieldDescription>
@@ -361,6 +375,9 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
                     disabled={false}
                   />
                   <FieldDescription>90–200 mmHg</FieldDescription>
@@ -383,6 +400,9 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
                     disabled={false}
                   />
                   <FieldDescription>18.5–39.9 kg/m2</FieldDescription>
@@ -405,6 +425,9 @@ export const MultiStepOnboardingForm = () => {
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
                     disabled={false}
                   />
                   <FieldDescription>15–150 mL/min/1.73 m2</FieldDescription>
@@ -420,7 +443,7 @@ export const MultiStepOnboardingForm = () => {
 
       case 2: {
         return (
-          <FieldGroup>
+          <FieldGroup key="step-2">
             <Controller
               name="isDiabetes"
               control={form.control}

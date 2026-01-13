@@ -27,6 +27,7 @@
 
 ## Checklist (Before Finishing Any Coding Task)
 
+- [ ] Run `npx tsc --noEmit` and fix any reported type errors.
 - [ ] Run `npx convex codegen` and verify it completes without errors.
 - [ ] Run `npm run format` and verify it completes without errors.
 - [ ] Run `npm run lint` and fix any reported issues.
