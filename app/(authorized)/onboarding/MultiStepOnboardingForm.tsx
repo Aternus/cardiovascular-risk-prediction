@@ -32,6 +32,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
+import { PATIENT_MEASUREMENT_LIMITS } from "@/convex/validators/intake";
 import {
   PATIENT_PROFILE_LIMITS,
   patientProfileSchema,
@@ -56,11 +57,7 @@ import type { TFieldError as FieldErrorType } from "@/convex/validators/types";
 
 const FIELD_RANGES = {
   age: PATIENT_PROFILE_LIMITS.age,
-  totalCholesterol: { min: 130, max: 320 },
-  hdlCholesterol: { min: 20, max: 100 },
-  systolicBp: { min: 90, max: 200 },
-  bmi: { min: 18.5, max: 39.9 },
-  egfr: { min: 15, max: 150 },
+  ...PATIENT_MEASUREMENT_LIMITS,
 } as const;
 
 const getFieldErrors = (error: unknown): FieldErrorType[] => {
@@ -90,9 +87,9 @@ const formSchema = patientProfileSchema.extend({
     "HDL cholesterol",
     FIELD_RANGES.hdlCholesterol,
   ),
-  systolicBp: rangedNumberField("Systolic BP", FIELD_RANGES.systolicBp),
+  systolicBP: rangedNumberField("Systolic BP", FIELD_RANGES.systolicBP),
   bmi: rangedNumberField("BMI", FIELD_RANGES.bmi),
-  egfr: rangedNumberField("eGFR", FIELD_RANGES.egfr),
+  eGFR: rangedNumberField("eGFR", FIELD_RANGES.eGFR),
   isDiabetes: z.boolean(),
   isSmoker: z.boolean(),
   isAntiHypertensiveMedication: z.boolean(),
@@ -117,7 +114,7 @@ const steps: TStep[] = [
   {
     title: "Measurements",
     description: "",
-    fields: ["totalCholesterol", "hdlCholesterol", "systolicBp", "bmi", "egfr"],
+    fields: ["totalCholesterol", "hdlCholesterol", "systolicBP", "bmi", "eGFR"],
   },
   {
     title: "Clinical Status",
@@ -159,9 +156,9 @@ export const MultiStepOnboardingForm = () => {
       dateOfBirth: "",
       totalCholesterol: "",
       hdlCholesterol: "",
-      systolicBp: "",
+      systolicBP: "",
       bmi: "",
-      egfr: "",
+      eGFR: "",
       isDiabetes: false,
       isSmoker: false,
       isAntiHypertensiveMedication: false,
@@ -198,9 +195,9 @@ export const MultiStepOnboardingForm = () => {
         intakeData?.totalCholesterol ?? currentValues.totalCholesterol,
       hdlCholesterol:
         intakeData?.hdlCholesterol ?? currentValues.hdlCholesterol,
-      systolicBp: intakeData?.systolicBP ?? currentValues.systolicBp,
+      systolicBP: intakeData?.systolicBP ?? currentValues.systolicBP,
       bmi: intakeData?.bmi ?? currentValues.bmi,
-      egfr: intakeData?.eGFR ?? currentValues.egfr,
+      eGFR: intakeData?.eGFR ?? currentValues.eGFR,
       isDiabetes: intakeData?.isDiabetes ?? currentValues.isDiabetes,
       isSmoker: intakeData?.isSmoker ?? currentValues.isSmoker,
       isAntiHypertensiveMedication:
@@ -243,9 +240,9 @@ export const MultiStepOnboardingForm = () => {
       await upsertIntake({
         totalCholesterol: values.totalCholesterol,
         hdlCholesterol: values.hdlCholesterol,
-        systolicBP: values.systolicBp,
+        systolicBP: values.systolicBP,
         bmi: values.bmi,
-        eGFR: values.egfr,
+        eGFR: values.eGFR,
         isDiabetes: values.isDiabetes,
         isSmoker: values.isSmoker,
         isTakingAntihypertensive: values.isAntiHypertensiveMedication,
@@ -263,9 +260,9 @@ export const MultiStepOnboardingForm = () => {
           dateOfBirth: "dateOfBirth",
           totalCholesterol: "totalCholesterol",
           hdlCholesterol: "hdlCholesterol",
-          systolicBP: "systolicBp",
+          systolicBP: "systolicBP",
           bmi: "bmi",
-          eGFR: "egfr",
+          eGFR: "eGFR",
           isDiabetes: "isDiabetes",
           isSmoker: "isSmoker",
           isTakingAntihypertensive: "isAntiHypertensiveMedication",
@@ -473,22 +470,22 @@ export const MultiStepOnboardingForm = () => {
             />
 
             <Controller
-              name="systolicBp"
+              name="systolicBP"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="systolicBp">Systolic BP</FieldLabel>
+                  <FieldLabel htmlFor="systolicBP">Systolic BP</FieldLabel>
                   <Input
                     {...field}
-                    id="systolicBp"
+                    id="systolicBP"
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
                     type="number"
                     inputMode="decimal"
                     step="any"
-                    min={FIELD_RANGES.systolicBp.min}
-                    max={FIELD_RANGES.systolicBp.max}
+                    min={FIELD_RANGES.systolicBP.min}
+                    max={FIELD_RANGES.systolicBP.max}
                     disabled={false}
                   />
                   <FieldDescription>90–200 mmHg</FieldDescription>
@@ -527,22 +524,22 @@ export const MultiStepOnboardingForm = () => {
             />
 
             <Controller
-              name="egfr"
+              name="eGFR"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="egfr">eGFR</FieldLabel>
+                  <FieldLabel htmlFor="eGFR">eGFR</FieldLabel>
                   <Input
                     {...field}
-                    id="egfr"
+                    id="eGFR"
                     aria-invalid={fieldState.invalid}
                     placeholder=""
                     autoComplete="off"
                     type="number"
                     inputMode="decimal"
                     step="any"
-                    min={FIELD_RANGES.egfr.min}
-                    max={FIELD_RANGES.egfr.max}
+                    min={FIELD_RANGES.eGFR.min}
+                    max={FIELD_RANGES.eGFR.max}
                     disabled={false}
                   />
                   <FieldDescription>15–150 mL/min/1.73 m2</FieldDescription>
