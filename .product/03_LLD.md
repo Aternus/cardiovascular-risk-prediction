@@ -141,7 +141,7 @@ Fields:
 
 - \_id
 - patientId (ref `patients`)
-- kind ("DIABETES" | "SMOKING_STATUS" | "ON_ANTIHYPERTENSIVE" | "ON_STATIN")
+- kind ("DIABETES" | "SMOKING" | "ANTIHYPERTENSIVE" | "STATIN")
 - value (boolean)
 - source ("PATIENT" | "IMPORT")
 
