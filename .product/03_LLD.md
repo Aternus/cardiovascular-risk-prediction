@@ -66,39 +66,45 @@ Example:
 
 ## DB
 
-To simplify the implementation, we will focus on **single tenant per user**:
+To simplify the implementation, we will focus on a **single patient per user**:
 
-- A signed-in **User** (clinician) owns multiple **Patients**.
-- Every read/write checks `ownerUserId` (from auth) matches the patient’s
-  `ownerUserId`.
+- A signed-in **User** is the **Patient**.
+- Each user owns exactly one patient profile record.
+- All reads/writes are scoped to the current user; the server resolves the
+  user's `patientId` and never accepts cross-patient IDs from the client.
 
 Convex notes:
 
 - Each document has `_id` and `_creationTime` automatically.
 - Store all timestamps as `number` unix ms for consistent sorting/filtering.
+- The `_creationTime` field is automatically added to the end of every (custom)
+  index to ensure a stable ordering. It should not be added explicitly in the
+  index definition.
+- The `by_creation_time` index is created automatically (and is what is used in
+  database queries that don't specify an index).
+- The `by_id` index is reserved.
 
 ### Table: `patients`
 
-Core patient profiles.
+Patient profile for the current user.
 
 Fields:
 
 - \_id
-- ownerUserId (string; e.g. auth `tokenIdentifier`)
+- userId (string; auth `tokenIdentifier`)
 - firstName (string)
 - lastName (string)
 - sexAtBirth ("FEMALE" | "MALE")
 - dateOfBirth (YYYY-MM-DD string)
-- isActive (boolean; soft delete sets false)
 
-Indexes (recommended):
+Indexes:
 
-- by_ownerUserId
-- by_ownerUserId_isActive_createdAt (optional composite via fields you store)
+- by_userId (unique)
 
 ### Table: `patientMeasurements`
 
-Time-series numeric facts.
+Time-series numeric facts (self-reported through the portal). The latest value
+per `kind` is used for calculations.
 
 Fields:
 
@@ -109,18 +115,17 @@ Fields:
 - value (number)
 - unit (string; store submitted unit, normalize at compute time)
 - measuredAt (unix ms)
-- source ("CLINICIAN" | "IMPORT")
+- source ("PATIENT" | "IMPORT")
 
-Indexes (recommended):
+Indexes:
 
 - by_patientId_measuredAt
 - by_patientId_kind_measuredAt
 
 ### Table: `patientClinicalEvents`
 
-Time-series **boolean flags** required by the PREVENT model.  
-Use an append-only timeline and treat the **latest** event per `kind` as the
-current value.
+Time-series **boolean flags** required by the PREVENT model. Use an append-only
+timeline and treat the **latest** event per `kind` as the current value.
 
 Fields:
 
@@ -129,16 +134,16 @@ Fields:
 - kind ("DIABETES" | "SMOKING_STATUS" | "ON_ANTIHYPERTENSIVE" | "ON_STATIN")
 - value (boolean)
 - recordedAt (unix ms)
-- source ("CLINICIAN" | "IMPORT")
+- source ("PATIENT" | "IMPORT")
 
-Indexes (recommended):
+Indexes:
 
 - by_patientId_recordedAt
 - by_patientId_kind_recordedAt
 
 ### Table: `riskAssessments`
 
-Each time we compute PREVENT, write an assessment record.
+Each time we compute a risk assessment, write an assessment record.
 
 Fields:
 
@@ -148,61 +153,13 @@ Fields:
 - modelVersion ("2023")
 - inputSnapshot (denormalized JSON; exactly what was sent to the calculator
   after normalization)
-- results (JSON; 10y + 30y sets)
+- results (JSON; 10-years result, including contributing factors)
 
-Indexes (recommended):
+Indexes:
 
-- by_patientId_createdAt
-
-### Table: `recommendations`
-
-Rule-based recommendations derived from an assessment.
-
-Fields:
-
-- \_id
-- patientId (ref `patients`)
-- assessmentId (ref `riskAssessments`)
-- rulesetId (e.g. "CVD_RECOMMENDATIONS_20260112")
-- items (RecommendationItem[])
-
-Indexes (recommended):
-
-- by_patientId_assessmentId
-
-```json
-[
-  {
-    "code": "STOP_SMOKING",
-    "title": "Advise smoking cessation",
-    "summary": "Recommend cessation resources and pharmacotherapy as appropriate.",
-    "rationale": "Smoking substantially increases cardiovascular risk; cessation reduces risk.",
-    "priority": 1,
-    "tags": ["lifestyle", "smoking"],
-    "ruleHits": ["rule_smoking_current"]
-  }
-]
-```
-
-Notes:
-
-1. `priority` is a range (integers): 1-3
+- by_patientId
 
 ## APIs
-
-Bulk API convention: any resource that needs to accept an array of entities
-should use a dedicated endpoint, example:
-`POST /api/v1/patients/{patientId}/measurements/bulk`. This allows consistent
-visibility into the API structure and proper separation between single and bulk
-logic.
-
-Implementation (selected stack):
-
-- **Convex HTTP Actions** define the REST endpoints (e.g. in `convex/http.ts`
-  using `httpRouter()`).
-- **Next.js App Router** may optionally proxy these endpoints via Route Handlers
-  if you want “same-origin” requests from the browser, but the canonical
-  implementation lives in Convex.
 
 ### External
 
@@ -214,8 +171,8 @@ For the MVP:
   a prototype integration; prefer a licensed/official source in a production
   system.
 
-All external calls are performed server-side (Convex actions / HTTP Actions) to
-avoid leaking keys/cookies and to sidestep browser CORS.
+All external calls are performed server-side to avoid leaking keys/cookies and
+to sidestep browser CORS.
 
 ### Calculate Risk using MdCalc API
 
@@ -319,8 +276,8 @@ curl --location 'https://clincalc.com/Cardiology/PREVENT/' \
 --data-urlencode 'ctl00%24txtOffcanvasSearch='
 ```
 
-The expected response is an HTML page markup (text) ->
-ClinCalcPREVENTAssessmentResponseDTO.
+The expected response is an HTML page markup (text)
+(ClinCalcPREVENTAssessmentResponseDTO).
 
 What we're interested in that page is the `drawChart_ASCVDContribution` function
 which has the data about the risk factors stored in the `data` constant.
@@ -350,17 +307,16 @@ function drawChart_ASCVDContribution() {
 
 ### Internal
 
-Implementation note (selected stack):
+Implementation notes:
 
 - **Primary**: the UI talks to **Convex queries/mutations/actions** directly
   (the best DX).
-- **Optional REST layer**: expose a versioned REST API (`/api/v1/...`) using
-  **Convex HTTP Actions** (via `httpRouter()`), mainly for:
-  - a stable contract for external clients,
-  - or proxying through Next.js Route Handlers for “same-origin” calls.
+- **REST layer**: expose a versioned REST API (`/api/v1/...`) using Next.js
+  Route Handlers for MdCalc / ClinCalc calls.
 
-Below is the REST surface (versioned) plus the DTOs. Convex function names can
-mirror these operations 1:1.
+Below is the REST surface (versioned) plus the DTOs. All endpoints are scoped to
+**the current user** (patient); the server resolves `patientId` from the auth
+context.
 
 ---
 
@@ -369,7 +325,7 @@ mirror these operations 1:1.
 ```typescript
 export type CursorDTO = string;
 
-export type SortDirDTO = "asc" | "desc";
+export type SortDirDTO = "ASC" | "DESC";
 
 export type PaginationQueryDTO = {
   limit?: number; // default 50
@@ -383,296 +339,81 @@ export type AuditDTO = {
 
 ---
 
-#### Patients
+#### Profile (Current User)
 
 ```typescript
 export type SexAtBirthDTO = "FEMALE" | "MALE";
 
-export type PatientDTO = {
+export type PatientProfileDTO = {
   id: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string; // YYYY-MM-DD
   sexAtBirth: SexAtBirthDTO;
-  isActive: boolean;
 } & AuditDTO;
 
-export type PatientCreateDTO = {
+export type PatientProfileUpsertDTO = {
   firstName: string;
   lastName: string;
   dateOfBirth: string; // YYYY-MM-DD
   sexAtBirth: SexAtBirthDTO;
 };
-
-export type PatientUpdateDTO = Partial<PatientCreateDTO> & {
-  isActive?: boolean;
-};
-
-export type PatientWithLatestRiskDTO = PatientDTO & {
-  latestRisk?: {
-    assessmentId: string;
-    createdAt: number;
-    timeHorizon: TimeHorizonDTO;
-    totalCVD: string;
-    riskCategory: "LOW" | "BORDERLINE" | "INTERMEDIATE" | "HIGH";
-  };
-};
 ```
 
-`POST /api/v1/patients`
+`GET /api/v1/me/profile`
 
 ```typescript
-export type CreatePatientRequestDTO = { body: PatientCreateDTO };
-export type CreatePatientResponseDTO = { patient: PatientDTO };
+export type GetProfileRequestDTO = {};
+export type GetProfileResponseDTO = { profile: PatientProfileDTO | null };
 ```
 
-`POST /api/v1/patients/create-with-intake`
-
-Transactional create for the patient + initial measurements + initial clinical
-events used by the Create Patient UI.
+`POST /api/v1/me/profile` (create or update)
 
 ```typescript
-export type CreatePatientWithIntakeRequestDTO = {
-  body: {
-    patient: PatientCreateDTO;
-    measurements?: Array<Omit<PatientMeasurementCreateDTO, "patientId">>;
-    clinicalEvents?: Array<Omit<PatientClinicalEventCreateDTO, "patientId">>;
-  };
-};
-
-export type CreatePatientWithIntakeResponseDTO = {
-  patient: PatientDTO;
-  measurements: PatientMeasurementDTO[];
-  clinicalEvents: PatientClinicalEventDTO[];
-};
-```
-
-`GET /api/v1/patients`
-
-```typescript
-export type ListPatientsRequestDTO = {
-  query?: PaginationQueryDTO & {
-    search?: string;
-    sort?: "createdAt" | "-createdAt";
-  };
-};
-
-export type ListPatientsResponseDTO = {
-  items: PatientDTO[];
-  nextCursor?: CursorDTO;
-};
-```
-
-`GET /api/v1/patients/with-latest-risk`
-
-```typescript
-export type ListPatientsWithLatestRiskRequestDTO = {
-  query?: PaginationQueryDTO & {
-    search?: string;
-    sort?: "createdAt" | "-createdAt";
-  };
-};
-
-export type ListPatientsWithLatestRiskResponseDTO = {
-  items: PatientWithLatestRiskDTO[];
-  nextCursor?: CursorDTO;
-};
-```
-
-`GET /api/v1/patients/{patientId}`
-
-```typescript
-export type GetPatientRequestDTO = { patientId: string };
-export type GetPatientResponseDTO = { patient: PatientDTO };
-```
-
-`PATCH /api/v1/patients/{patientId}`
-
-```typescript
-export type UpdatePatientRequestDTO = {
-  patientId: string;
-  body: PatientUpdateDTO;
-};
-export type UpdatePatientResponseDTO = { patient: PatientDTO };
-```
-
-`DELETE /api/v1/patients/{patientId}` (soft delete)
-
-```typescript
-export type DeletePatientRequestDTO = { patientId: string };
-export type DeletePatientResponseDTO = { deleted: true };
+export type UpsertProfileRequestDTO = { body: PatientProfileUpsertDTO };
+export type UpsertProfileResponseDTO = { profile: PatientProfileDTO };
 ```
 
 ---
 
-#### Patient Measurements
+#### Intake (Current User)
 
-These are time-series numeric facts (lab / vitals).
-
-⚠️ WE ALWAYS CREATE A NEW Measurement. WE DO NOT SUPPORT UPDATES. FIXING
-MISTAKES IS DONE VIA DELETE + CREATE.
+The intake payload maps directly to the PREVENT model inputs. The server
+normalizes units and stores time-series entries under the hood.
 
 ```typescript
-export type MeasurementKindDTO =
-  | "TOTAL_CHOLESTEROL"
-  | "HDL_CHOLESTEROL"
-  | "SYSTOLIC_BP"
-  | "BMI"
-  | "EGFR";
-
-export type MeasurementSourceDTO = "CLINICIAN" | "IMPORT";
-
-export type PatientMeasurementDTO = {
-  id: string;
-  patientId: string;
-  kind: MeasurementKindDTO;
-  value: number;
-  unit: string; // store the unit submitted; normalize at compute time
-  measuredAt: number; // unix ms
-  source: MeasurementSourceDTO;
+export type PatientIntakeDTO = {
+  totalCholesterol: number; // mg/dL
+  hdlCholesterol: number; // mg/dL
+  systolicBP: number; // mmHg
+  bmi: number; // kg/m2
+  eGFR: number; // mL/min/1.73 m2
+  isDiabetes: boolean;
+  isSmoker: boolean;
+  isTakingAntihypertensive: boolean;
+  isTakingStatin: boolean;
 } & AuditDTO;
 
-export type PatientMeasurementCreateDTO = Omit<
-  PatientMeasurementDTO,
-  "id" | "createdAt" | "updatedAt"
->;
+export type PatientIntakeUpsertDTO = Exclude<PatientIntakeDTO, AuditDTO>;
 ```
 
-`POST /api/v1/patients/{patientId}/measurements`
+`GET /api/v1/me/intake`
 
 ```typescript
-export type CreatePatientMeasurementRequestDTO = {
-  patientId: string;
-  body: Omit<PatientMeasurementCreateDTO, "patientId">;
-};
-
-export type CreatePatientMeasurementResponseDTO = {
-  measurement: PatientMeasurementDTO;
-};
+export type GetIntakeRequestDTO = {};
+export type GetIntakeResponseDTO = { intake: PatientIntakeDTO | null };
 ```
 
-`POST /api/v1/patients/{patientId}/measurements/bulk`
+`POST /api/v1/me/intake` (create or update)
 
 ```typescript
-export type CreatePatientMeasurementsBulkRequestDTO = {
-  patientId: string;
-  body: Array<Omit<PatientMeasurementCreateDTO, "patientId">>;
-};
-
-export type CreatePatientMeasurementsBulkResponseDTO = {
-  items: PatientMeasurementDTO[];
-};
-```
-
-`GET /api/v1/patients/{patientId}/measurements`
-
-```typescript
-export type ListPatientMeasurementsRequestDTO = {
-  patientId: string;
-  query?: PaginationQueryDTO & {
-    kind?: MeasurementKindDTO;
-    measuredAfter?: number; // unix ms
-    measuredBefore?: number; // unix ms
-    sort?: "measuredAt" | "-measuredAt";
-  };
-};
-
-export type ListPatientMeasurementsResponseDTO = {
-  items: PatientMeasurementDTO[];
-  nextCursor?: CursorDTO;
-};
-```
-
-`DELETE /api/v1/patients/{patientId}/measurements/{measurementId}`
-
-```typescript
-export type DeletePatientMeasurementRequestDTO = {
-  patientId: string;
-  measurementId: string;
-};
-
-export type DeletePatientMeasurementResponseDTO = { deleted: true };
+export type UpsertIntakeRequestDTO = { body: PatientIntakeUpsertDTO };
+export type UpsertIntakeResponseDTO = { intake: PatientIntakeDTO };
 ```
 
 ---
 
-#### Patient Clinical Events
-
-These are time-series boolean facts (status changes).
-
-⚠️ WE ALWAYS CREATE A NEW Clinical Event. WE DO NOT SUPPORT UPDATES. FIXING
-MISTAKES IS DONE VIA DELETE + CREATE.
-
-```typescript
-export type ClinicalEventKindDTO =
-  | "DIABETES"
-  | "SMOKING_STATUS"
-  | "ON_ANTIHYPERTENSIVE"
-  | "ON_STATIN";
-
-export type ClinicalEventSourceDTO = "CLINICIAN" | "IMPORT";
-
-export type PatientClinicalEventDTO = {
-  id: string;
-  patientId: string;
-  kind: ClinicalEventKindDTO;
-  value: boolean;
-  recordedAt: number; // unix ms
-  source: ClinicalEventSourceDTO;
-} & AuditDTO;
-
-export type PatientClinicalEventCreateDTO = Omit<
-  PatientClinicalEventDTO,
-  "id" | "createdAt" | "updatedAt"
->;
-```
-
-`POST /api/v1/patients/{patientId}/clinical-events`
-
-```typescript
-export type CreatePatientClinicalEventRequestDTO = {
-  patientId: string;
-  body: Omit<PatientClinicalEventCreateDTO, "patientId">;
-};
-
-export type CreatePatientClinicalEventResponseDTO = {
-  event: PatientClinicalEventDTO;
-};
-```
-
-`POST /api/v1/patients/{patientId}/clinical-events/bulk`
-
-```typescript
-export type CreatePatientClinicalEventsBulkRequestDTO = {
-  patientId: string;
-  body: Array<Omit<PatientClinicalEventCreateDTO, "patientId">>;
-};
-
-export type CreatePatientClinicalEventsBulkResponseDTO = {
-  items: PatientClinicalEventDTO[];
-};
-```
-
-`GET /api/v1/patients/{patientId}/clinical-events`
-
-```typescript
-export type ListPatientClinicalEventsRequestDTO = {
-  patientId: string;
-  query?: PaginationQueryDTO & {
-    kind?: ClinicalEventKindDTO;
-    sort?: "recordedAt" | "-recordedAt";
-  };
-};
-
-export type ListPatientClinicalEventsResponseDTO = {
-  items: PatientClinicalEventDTO[];
-  nextCursor?: CursorDTO;
-};
-```
-
----
-
-#### Risk Assessments
+#### Risk Assessments (Current User)
 
 A risk assessment is computed from a **snapshot** (latest measurement per kind +
 latest clinical flag per kind + computed age).
@@ -682,9 +423,9 @@ latest clinical flag per kind + computed age).
 ```typescript
 export type RiskModelDTO = "PREVENT";
 export type RiskModelVersionDTO = "2023";
-export type TimeHorizonDTO = "10_YEARS" | "30_YEARS";
+export type TimeHorizonDTO = "10_YEARS";
 
-export type PreventRiskSetDTO = {
+export type PREVENTRiskSetDTO = {
   totalCVD: string;
   ASCVD: string;
   heartFailure: string;
@@ -702,13 +443,12 @@ export type RiskAssessmentResultDTO = {
   timeHorizon: TimeHorizonDTO;
   setName: "RISKS";
   setUnits: "%";
-  data: PreventRiskSetDTO;
+  data: PREVENTRiskSetDTO;
   contributions?: RiskFactorContributionDTO[]; // 10-year ASCVD factors only
 };
 
 export type RiskAssessmentDTO = {
   id: string;
-  patientId: string;
   model: RiskModelDTO;
   modelVersion: RiskModelVersionDTO;
   inputSnapshot: Record<string, unknown>;
@@ -716,15 +456,12 @@ export type RiskAssessmentDTO = {
 } & AuditDTO;
 ```
 
-`POST /api/v1/patients/{patientId}/risk-assessments`
+`POST /api/v1/me/risk-assessments`
 
-Computes a new assessment using external sources and stores it. For MVP, this
-endpoint also generates recommendations in the same flow (in production, prefer
-an orchestrator).
+Computes a new assessment using external sources and stores it.
 
 ```typescript
 export type CreateRiskAssessmentRequestDTO = {
-  patientId: string;
   body?: {
     // optional override; if omitted, server derives snapshot from DB
     inputSnapshotOverride?: Record<string, unknown>;
@@ -733,15 +470,13 @@ export type CreateRiskAssessmentRequestDTO = {
 
 export type CreateRiskAssessmentResponseDTO = {
   assessment: RiskAssessmentDTO;
-  recommendations?: RecommendationsDTO;
 };
 ```
 
-`GET /api/v1/patients/{patientId}/risk-assessments`
+`GET /api/v1/me/risk-assessments`
 
 ```typescript
 export type ListRiskAssessmentsRequestDTO = {
-  patientId: string;
   query?: PaginationQueryDTO & {
     sort?: "createdAt" | "-createdAt";
   };
@@ -753,11 +488,10 @@ export type ListRiskAssessmentsResponseDTO = {
 };
 ```
 
-`GET /api/v1/patients/{patientId}/risk-assessments/{assessmentId}`
+`GET /api/v1/me/risk-assessments/{assessmentId}`
 
 ```typescript
 export type GetRiskAssessmentRequestDTO = {
-  patientId: string;
   assessmentId: string;
 };
 
@@ -766,82 +500,20 @@ export type GetRiskAssessmentResponseDTO = {
 };
 ```
 
----
-
-#### Recommendations
-
-Recommendations are produced from: the risk results AND rule-based logic.
-
-```typescript
-export type RecommendationPriorityDTO = 1 | 2 | 3;
-
-export type RecommendationItemDTO = {
-  code: string; // stable identifier, e.g. STOP_SMOKING
-  title: string;
-  summary: string;
-  rationale: string;
-  priority: RecommendationPriorityDTO;
-  tags: string[];
-  ruleHits: string[];
-};
-
-export type RecommendationsDTO = {
-  id: string;
-  patientId: string;
-  assessmentId: string;
-  rulesetId: string; // e.g. CVD_RECOMMENDATIONS_20260112
-  items: RecommendationItemDTO[];
-} & AuditDTO;
-```
-
-`GET /api/v1/patients/{patientId}/risk-assessments/{assessmentId}/recommendations`
-
-```typescript
-export type GetRecommendationsRequestDTO = {
-  patientId: string;
-  assessmentId: string;
-};
-
-export type GetRecommendationsResponseDTO = {
-  recommendations: RecommendationsDTO | null; // null if not generated
-};
-```
-
-`POST /api/v1/patients/{patientId}/risk-assessments/{assessmentId}/recommendations`
-
-(Re)generate recommendations for an assessment (idempotent per `rulesetId`).
-
-```typescript
-export type UpsertRecommendationsRequestDTO = {
-  patientId: string;
-  assessmentId: string;
-  body?: {
-    rulesetId?: string; // optional override; otherwise server picks latest
-  };
-};
-
-export type UpsertRecommendationsResponseDTO = {
-  recommendations: RecommendationsDTO;
-};
-```
-
 ## Modules
 
 1. Convex (backend)
-   1. `patients` (queries/mutations)
-   2. `measurements` (queries/mutations)
-   3. `clinicalEvents` (queries/mutations)
-   4. `riskAssessments` (actions + queries)
-   5. `recommendations` (mutations + queries)
-   6. `http` (HTTP Actions router: REST endpoints + webhooks)
+   1. `patients` (profile queries/mutations)
+   2. `intake` (upsert + read of patient inputs)
+   3. `riskAssessments` (actions + queries)
 2. Core (shared logic)
    1. Domains: Patient, Units
    2. Models: PREVENT (routing-ready)
-   3. Engines: Risk, Recommendation
+   3. Engines: Risk
 3. Next.js (frontend)
    1. Auth UI (Email + Password)
-   2. Patients UI
-   3. Patient detail & assessment UI
+   2. Patient Profile + Intake Form UI
+   3. Risk Results UI
 
 ## Risk Calculator Model Routing
 
@@ -864,39 +536,20 @@ export type UpsertRecommendationsResponseDTO = {
 2. Create functions for calculating `eGFR` and `BMI`.
    - The functions should validate inputs and provide descriptive errors.
 
-## Separate Risk Calculator from Recommendations
-
-Allows us to provide a disclaimer such as:
-
-"Calculator is clinically sourced. Suggestions are based on heuristics."
-
-```js
-const patientRiskResult = RiskEngine.calculate(patientData);
-const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
-```
-
 ## UI
 
 1. Login Page (login via email and password)
-2. Patients List Page
-   1. Create Patient button: open a side drawer that allows filling in Patients
-      record + Patient Measurements record + Patient Clinical Events record
-   2. Patients Table with columns:
-      1. First Name
-      2. Last Name
-      3. If there was a previously performed risk assessment for the patient:
-         1. Risk of CVD as Low/Borderline/Intermediate/High using totalCVD value
-         2. totalCVD as percentage
-      4. View the Patient Page button
-3. View Patient Page
-   1. Provide a measurements button: side drawer that adds Patient Measurements
-      record.
-   2. Report clinical event button: side drawer that adds Patient Clinical
-      Events record.
-   3. Perform Risk Assessment button: invokes analysis which generates Risk
-      Assessments record + Recommendations record and enters the patient page
-      into the "loading" state.
-   4. If there was a previously performed risk assessment:
+
+2. Onboarding Page (multistep form)
+   1. Patient Profile inputs (name, DOB, sex at birth).
+   2. Capture PREVENT inputs in a single form.
+   3. When submitted, a risk assessment is automatically triggered, when it has
+      finished, the user is redirected to a Risk Assessment Page.
+
+3. Risk Assessment Page
+   1. If the patient profile is incomplete or PREVENT inputs are incomplete
+      1. Redirect the user to the Onboarding Page
+   2. Else, show the Results
       1. Your risk of having a Cardiovascular (CV) Event with the next 10 years
          is `totalCVD`
       2. According to the AHA Cardiovascular Disease (CVD) interpretation, it is
@@ -909,14 +562,13 @@ const patientRecommendation = RecommendationEngine.generate(patientRiskResult);
          1. CHD
          2. Stroke
          3. HF
-      4. Contribution of each Risk Factor (based on ClinCalc API):
+      4. Contribution of each Risk Factor:
          - Each factor affecting 10-year ASCVD risk can be measured on its own,
            whether it is protective (reducing risk) or harmful (increasing
            risk).
-         1. Age
-         2. Total Cholesterol
-         3. Systolic BP
-         4. HDL
-         5. eGFR
-
-      5. Recommendations (rule-based)
+         - Examples:
+           - Age
+           - Total Cholesterol
+           - Systolic BP
+           - HDL
+           - eGFR
