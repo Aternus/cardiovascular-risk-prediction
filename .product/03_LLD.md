@@ -520,7 +520,7 @@ export type MeasurementKindDTO =
   | "BMI"
   | "EGFR";
 
-export type MeasurementSourceDTO = "PATIENT" | "CLINICIAN" | "IMPORT";
+export type MeasurementSourceDTO = "CLINICIAN" | "IMPORT";
 
 export type PatientMeasurementDTO = {
   id: string;

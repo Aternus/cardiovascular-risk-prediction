@@ -192,7 +192,7 @@ Some items include explanations about specific reasons for exclusion.
 1. Manage patient information
    1. Web form with optional fields for future use
    2. Clinic Workspace: the ability to manage multiple patients by a user
-      (clinician).
+      (clinician workspace).
 
 2. Provide personalized results
    1. Route to the correct model(s) by region of the patient.
